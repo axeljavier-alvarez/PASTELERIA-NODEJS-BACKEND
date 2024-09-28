@@ -8,6 +8,7 @@ const jwt = require('../services/jwt');
 // USUARIO POR DEFECTO Y VERIFICACION
 function Login(req, res) {
 
+  
   var parametros = req.body;
 
   Usuarios.findOne({ email: parametros.email }, (err, usuarioEncontrado) => {

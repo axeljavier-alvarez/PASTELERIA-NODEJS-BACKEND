@@ -1,8 +1,13 @@
 const express = require('express');
 const cors = require('cors'); // Importa cors
+const multer = require('multer');
+
+// Configuración de multer para manejar archivos
+const upload = multer({ dest: 'src/controllers/imagenes' }); // Asegúrate de que esto esté configurado
+
 const ProductosController = require('../controllers/productos.controller');
 const autenticacionToken = require('../middlewares/autenticacion');
-const MulterImagen = require('../middlewares/multer');
+
 const api = express.Router();
 
 // Configura CORS
@@ -12,10 +17,13 @@ api.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'] // Cabeceras permitidas
 }));
 
+// Middleware para manejar datos de formularios
+api.use(express.urlencoded({ extended: true })); // Para manejar datos de formularios
+
 /* Rutas */
 api.post('/agregarProductosRolGestor/:idSucursal/:idCategoria', 
     autenticacionToken.Auth, 
-    MulterImagen.single('imagen'),
+    upload.single('imagen'), // Usar multer para manejar la carga de archivos
     ProductosController.agregarProductoRolGestor
 );
 
