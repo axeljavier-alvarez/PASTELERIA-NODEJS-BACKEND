@@ -3,12 +3,12 @@ const path = require('path');
 
 // Configuración de multer
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, 'src/imagenes'); // Cambia esta ruta según sea necesario
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Nombre del archivo
-    }
+  destination: (req, file, cb) => {
+      cb(null, 'src/imagenes'); // Verifica esta ruta
+  },
+  filename: (req, file, cb) => {
+      cb(null, Date.now() + path.extname(file.originalname)); // Verifica el nombre
+  }
 });
 
 const upload = multer({ storage: storage });

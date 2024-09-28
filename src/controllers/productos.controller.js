@@ -1,7 +1,7 @@
 const Categorias = require('../models/categorias.model');
 const Productos = require('../models/productos.model');
 const Sucursales = require('../models/sucursales.model');
-const mongoose = require('mongoose'); 
+const mongoose = require('mongoose');
 
 function agregarProductoRolGestor(req, res) {
     if (req.user.rol !== 'ROL_GESTOR') {
@@ -12,11 +12,14 @@ function agregarProductoRolGestor(req, res) {
     const idSucursal = req.params.idSucursal;
     const idCategoria = req.params.idCategoria;
 
-    const imagenPath = req.file ? req.file.path : null;
+    // Aquí se obtiene la ruta de la imagen
+
+    const imagenPath = req.file ? req.file.filename : null; // Solo el nombre del archivo
+
 
     // Validación de parámetros
-    if (!parametros.nombreProducto || !parametros.marca || 
-        !parametros.stock || !parametros.precio || 
+    if (!parametros.nombreProducto || !parametros.marca ||
+        !parametros.stock || !parametros.precio ||
         !parametros.descripcion || !parametros.size) {
         return res.status(400).json({ mensaje: 'Debe llenar los campos necesarios (nombreProducto, marca, descripción, stock, precio, size). Además, los campos no pueden ser vacíos' });
     }
@@ -45,7 +48,7 @@ function agregarProductoRolGestor(req, res) {
             productosModel.descripcion = parametros.descripcion;
             productosModel.size = parametros.size;
             productosModel.estado = "disponible";
-            productosModel.imagen = imagenPath;
+            productosModel.imagen = imagenPath; // Asignar la URL de la imagen aquí
 
             productosModel.descripcionCategoria = [{
                 idCategoria: categoriaEncontrada._id,
@@ -71,8 +74,6 @@ function agregarProductoRolGestor(req, res) {
         });
     });
 }
-
-
 /* 
 function agregarProductoRolAdmin(req, res) {
     if (req.user.rol !== 'ROL_ADMIN') {
@@ -131,30 +132,30 @@ function verProductosRolGestor(req, res) {
         Sucursales.findById(idSucursal),
         Categorias.findById(idCategoria)
     ])
-    .then(([sucursal, categoria]) => {
-        if (!sucursal) {
-            return res.status(404).send({ mensaje: 'Sucursal no encontrada.' });
-        }
-        if (!categoria) {
-            return res.status(404).send({ mensaje: 'Categoría no encontrada.' });
-        }
+        .then(([sucursal, categoria]) => {
+            if (!sucursal) {
+                return res.status(404).send({ mensaje: 'Sucursal no encontrada.' });
+            }
+            if (!categoria) {
+                return res.status(404).send({ mensaje: 'Categoría no encontrada.' });
+            }
 
-        // Buscar los productos por ID de sucursal y ID de categoría
-        return Productos.find({ 
-            'datosSucursal.idSucursal': idSucursal, 
-            'descripcionCategoria.idCategoria': idCategoria 
+            // Buscar los productos por ID de sucursal y ID de categoría
+            return Productos.find({
+                'datosSucursal.idSucursal': idSucursal,
+                'descripcionCategoria.idCategoria': idCategoria
+            });
+        })
+        .then(productosEncontrados => {
+            if (!productosEncontrados || productosEncontrados.length === 0) {
+                return res.status(404).send({ mensaje: 'No se encontraron productos para la sucursal y categoría proporcionadas.' });
+            }
+
+            return res.status(200).send({ productos: productosEncontrados });
+        })
+        .catch(err => {
+            return res.status(500).send({ mensaje: 'Error al buscar los productos.', error: err });
         });
-    })
-    .then(productosEncontrados => {
-        if (!productosEncontrados || productosEncontrados.length === 0) {
-            return res.status(404).send({ mensaje: 'No se encontraron productos para la sucursal y categoría proporcionadas.' });
-        }
-
-        return res.status(200).send({ productos: productosEncontrados });
-    })
-    .catch(err => {
-        return res.status(500).send({ mensaje: 'Error al buscar los productos.', error: err });
-    });
 }
 
 
@@ -237,52 +238,52 @@ function editarProductosRolGestor(req, res) {
 
 
 
-function eliminarProductosRolGestor(req,res){
+function eliminarProductosRolGestor(req, res) {
     if (req.user.rol !== 'ROL_GESTOR') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_GESTOR puede realizar esta acción" });
     }
 
     var idProducto = req.params.ID;
-    Productos.findByIdAndDelete(idProducto,(err, eliminarProducto)=>{
-        if (err) return res.status(500).send({mensaje: "Error en la peticion"});
-        if (!eliminarProducto)return res.status(500).send({mensaje : "Error al eliminar la Empresa"});
-        return res.status(200).send({productos: eliminarProducto});
+    Productos.findByIdAndDelete(idProducto, (err, eliminarProducto) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+        if (!eliminarProducto) return res.status(500).send({ mensaje: "Error al eliminar la Empresa" });
+        return res.status(200).send({ productos: eliminarProducto });
     })
 }
 
 
 
-function verProductosPorId(req,res){
+function verProductosPorId(req, res) {
     if (req.user.rol !== 'ROL_GESTOR') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_GESTOR puede realizar esta acción " });
     }
     var idProducto = req.params.ID;
 
-    Productos.findById(idProducto, (err,productoEncontrado)=>{
-        if(err) return res.status(500).send({ mensaje: "Error en la petición"});
-        if(!productoEncontrado) return res.status(500).send({ mensaje: "Error al ver los productos"});
-        return res.status(200).send({ productos: productoEncontrado});
+    Productos.findById(idProducto, (err, productoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+        if (!productoEncontrado) return res.status(500).send({ mensaje: "Error al ver los productos" });
+        return res.status(200).send({ productos: productoEncontrado });
     })
 
 }
 
 
 /* ROL CLIENTE */
-function verProductosPorIdRolCliente(req,res){
+function verProductosPorIdRolCliente(req, res) {
     if (req.user.rol !== 'ROL_CLIENTE') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_CLIENTE puede realizar esta acción " });
     }
     var idProducto = req.params.ID;
 
-    Productos.findById(idProducto, (err,productoEncontrado)=>{
-        if(err) return res.status(500).send({ mensaje: "Error en la petición"});
-        if(!productoEncontrado) return res.status(500).send({ mensaje: "Error al ver los productos"});
-        return res.status(200).send({ productos: productoEncontrado});
+    Productos.findById(idProducto, (err, productoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+        if (!productoEncontrado) return res.status(500).send({ mensaje: "Error al ver los productos" });
+        return res.status(200).send({ productos: productoEncontrado });
     })
 
 }
 
-  
+
 /* TAREAS DEL ROL_CLIENTE */
 function obtenerProductosPorIdSucursal(req, res) {
 
@@ -333,30 +334,30 @@ function verProductosRolCliente(req, res) {
         Sucursales.findById(idSucursal),
         Categorias.findById(idCategoria)
     ])
-    .then(([sucursal, categoria]) => {
-        if (!sucursal) {
-            return res.status(404).send({ mensaje: 'Sucursal no encontrada.' });
-        }
-        if (!categoria) {
-            return res.status(404).send({ mensaje: 'Categoría no encontrada.' });
-        }
+        .then(([sucursal, categoria]) => {
+            if (!sucursal) {
+                return res.status(404).send({ mensaje: 'Sucursal no encontrada.' });
+            }
+            if (!categoria) {
+                return res.status(404).send({ mensaje: 'Categoría no encontrada.' });
+            }
 
-        // Buscar los productos por ID de sucursal y ID de categoría
-        return Productos.find({ 
-            'datosSucursal.idSucursal': idSucursal, 
-            'descripcionCategoria.idCategoria': idCategoria 
+            // Buscar los productos por ID de sucursal y ID de categoría
+            return Productos.find({
+                'datosSucursal.idSucursal': idSucursal,
+                'descripcionCategoria.idCategoria': idCategoria
+            });
+        })
+        .then(productosEncontrados => {
+            if (!productosEncontrados || productosEncontrados.length === 0) {
+                return res.status(404).send({ mensaje: 'No se encontraron productos para la sucursal y categoría proporcionadas.' });
+            }
+
+            return res.status(200).send({ productos: productosEncontrados });
+        })
+        .catch(err => {
+            return res.status(500).send({ mensaje: 'Error al buscar los productos.', error: err });
         });
-    })
-    .then(productosEncontrados => {
-        if (!productosEncontrados || productosEncontrados.length === 0) {
-            return res.status(404).send({ mensaje: 'No se encontraron productos para la sucursal y categoría proporcionadas.' });
-        }
-
-        return res.status(200).send({ productos: productosEncontrados });
-    })
-    .catch(err => {
-        return res.status(500).send({ mensaje: 'Error al buscar los productos.', error: err });
-    });
 }
 
 module.exports = {
