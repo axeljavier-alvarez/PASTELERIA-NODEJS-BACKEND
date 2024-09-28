@@ -73,8 +73,6 @@ function agregarProductoRolGestor(req, res) {
 }
 
 
-
-
 /* 
 function agregarProductoRolAdmin(req, res) {
     if (req.user.rol !== 'ROL_ADMIN') {
