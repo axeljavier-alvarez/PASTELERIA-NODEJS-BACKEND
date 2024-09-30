@@ -88,6 +88,15 @@ api.get('/getCajeroAltaVerapaz', autenticacionToken.Auth, usuarioController.getC
 api.get('/getCajeroBajaVerapaz', autenticacionToken.Auth, usuarioController.getCajeroBajaVerapaz);
 
 
+/*EDITAR PERFIL*/
+api.put('/editarPerfilAdmin', autenticacionToken.Auth, usuarioController.editarPerfilAdmin);
+api.put('/editarPerfilCliente/:ID', autenticacionToken.Auth, usuarioController.editarPerfilCliente)
+api.put('/editarPerfilFacturador/:ID', autenticacionToken.Auth, usuarioController.editarPerfilFacturador);
+api.put('/editarPerfilGestor/:ID', autenticacionToken.Auth , usuarioController.editarPerfilGestor);
+api.put('/editarPerfilCajero/:ID' , autenticacionToken.Auth, usuarioController.editarPerfilCajero);
+api.put('/editarPerfilRepartidor/:ID' , autenticacionToken.Auth, usuarioController.editarPerfilRepartidor);
 
-/* al momento de subir esto a github, eliminar las librerias :) */
+//BUSQUEDA
+
+api.post('/buscarUsuario', autenticacionToken.Auth, usuarioController.buscarUsuario);
 module.exports= api;

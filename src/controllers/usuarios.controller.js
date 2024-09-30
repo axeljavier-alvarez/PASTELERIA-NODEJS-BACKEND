@@ -8,7 +8,7 @@ const jwt = require('../services/jwt');
 // USUARIO POR DEFECTO Y VERIFICACION
 function Login(req, res) {
 
-  
+
   var parametros = req.body;
 
   Usuarios.findOne({ email: parametros.email }, (err, usuarioEncontrado) => {
@@ -422,7 +422,7 @@ function getUsuariosRolGestor(req, res) {
   }
 
   // verificar que tipo de usuario quiero ver
-  Usuarios.find({ rol: 'ROL_GESTOR'}, (err, gestorEncontrado) => {
+  Usuarios.find({ rol: 'ROL_GESTOR' }, (err, gestorEncontrado) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
     if (!gestorEncontrado) return res.status(500).send({ mensaje: "Error al ver los gestores de inventario" });
     return res.status(200).send({ usuario: gestorEncontrado });
@@ -811,13 +811,13 @@ function editarUsuarioCajero(req, res) {
   var idCajero = req.params.ID;
 
   if (parametros.email) {
-  
+
     Usuarios.findOne({ email: parametros.email, _id: { $ne: idRepartidor } }, (err, emailExistente) => {
       if (err) return res.status(500).send({ mensaje: "Error en la petición" });
       if (emailExistente) {
         return res.status(400).send({ mensaje: "El email ya está en uso por otro usuario." });
       }
-      
+
       Usuarios.findByIdAndUpdate(idCajero, parametros, { new: true }, (err, usuarioEncontrado) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición" });
         if (!usuarioEncontrado) return res.status(404).send({ mensaje: "Error al editar Cajero" });
@@ -834,7 +834,7 @@ function editarUsuarioCajero(req, res) {
   }
 }
 
-function eliminarUsuarioCajero(req,res){
+function eliminarUsuarioCajero(req, res) {
   if (req.user.rol !== 'ROL_ADMIN') {
     return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
 
@@ -891,7 +891,7 @@ function getGestorGuatemala(req, res) {
     if (err) {
       return res.status(500).send({ mensaje: "Error en la petición" });
     }
-    
+
     if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
       return res.status(404).send({ mensaje: "No se encontraron usuarios para este departamento" });
     }
@@ -913,7 +913,7 @@ function getCajeroGuatemala(req, res) {
     if (err) {
       return res.status(500).send({ mensaje: "Error en la petición" });
     }
-    
+
     if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
       return res.status(404).send({ mensaje: "No se encontraron usuarios para este departamento" });
     }
@@ -934,7 +934,7 @@ function getCajeroAltaVerapaz(req, res) {
     if (err) {
       return res.status(500).send({ mensaje: "Error en la petición" });
     }
-    
+
     if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
       return res.status(404).send({ mensaje: "No se encontraron usuarios para este departamento" });
     }
@@ -955,7 +955,7 @@ function getCajeroBajaVerapaz(req, res) {
     if (err) {
       return res.status(500).send({ mensaje: "Error en la petición" });
     }
-    
+
     if (!usuariosEncontrados || usuariosEncontrados.length === 0) {
       return res.status(404).send({ mensaje: "No se encontraron usuarios para este departamento" });
     }
@@ -963,6 +963,168 @@ function getCajeroBajaVerapaz(req, res) {
     return res.status(200).send({ usuarios: usuariosEncontrados });
   });
 }
+
+/*EDITAR PERFIL */
+function editarPerfilAdmin(req, res) {
+  var idAdmin = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.imagen = null;
+
+  Usuarios.findByIdAndUpdate(idAdmin, parametros, { new: true }, (err, editarControl) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarControl) return res.status(500).send({ mensaje: "Error al editar el Administrador" });
+
+    return res.status(200).send({ Usuario: editarControl });
+  });
+}
+
+
+function editarPerfilCliente(req, res) {
+  var idCliente = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.imagen = null;
+
+  Usuarios.findByIdAndUpdate(idCliente, parametros, { new: true }, (err, editarCliente) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarCliente) return res.status(500).send({ mensaje: "Error al editar el Cliente" });
+
+    return res.status(200).send({ Usuario: editarCliente });
+  });
+}
+
+function editarPerfilFacturador(req, res) {
+  var idFacturador = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.fotoPerfil = null;
+
+  Usuarios.findByIdAndUpdate(idFacturador, parametros, { new: true }, (err, editarFacturador) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarFacturador) return res.status(500).send({ mensaje: "Error al editar el Facturador" });
+
+    return res.status(200).send({ Usuario: editarFacturador });
+  });
+}
+
+function editarPerfilGestor(req, res) {
+  var idGestor = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.fotoPerfil = null;
+
+  Usuarios.findByIdAndUpdate(idGestor, parametros, { new: true }, (err, editarGestor) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarGestor) return res.status(500).send({ mensaje: "Error al editar el Gestor" });
+
+    return res.status(200).send({ Usuario: editarGestor });
+  });
+}
+
+function editarPerfilCajero(req, res) {
+  var idCajero = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.imagen = null;
+
+  Usuarios.findByIdAndUpdate(idCajero, parametros, { new: true }, (err, editarCajero) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarCajero) return res.status(500).send({ mensaje: "Error al editar el Cajero" });
+
+    return res.status(200).send({ Usuario: editarCajero });
+  });
+}
+
+function editarPerfilRepartidor(req, res) {
+  var idRepartidor = req.params.ID;
+  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+
+  var parametros = {};
+  if (nombre) parametros.nombre = nombre;
+  if (apellido) parametros.apellido = apellido;
+  if (email) parametros.email = email;
+  if (telefono) parametros.telefono = telefono;
+  if (direccion) parametros.direccion = direccion;
+  if (departamento) parametros.departamento = departamento;
+  if (municipio) parametros.municipio = municipio;
+  if (imagen) parametros.fotoPerfil = null;
+
+  Usuarios.findByIdAndUpdate(idRepartidor, parametros, { new: true }, (err, editarRepartidor) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+
+    if (!editarRepartidor) return res.status(500).send({ mensaje: "Error al editar el Usuario" });
+
+    return res.status(200).send({ Usuario: editarRepartidor });
+  });
+}
+
+//BUSQUEDA DE USUARIOS
+
+function buscarUsuario(req, res) {
+  if (req.user.rol !== "ROL_ADMIN") {
+    return res.status(403).send({ mensaje: "Solo el rol admin tiene permisos" });
+  }
+  var params = req.body;
+  var Datos = {};
+  if (params.nombre) Datos.nombre = params.nombre;
+  if (params.departamento) Datos.departamento = params.departamento;
+  if (params.municipio) Datos.municipio = params.municipio;
+
+  Usuarios.find(Datos, (err, usuarioEncontrado) => {
+    if (err) return res.status(500).send({ mensaje: "Error interno en la petición" });
+    if (!usuarioEncontrado) return res.status(500).send({ mensaje: "No se encontró el usuario" });
+
+    return res.status(200).send({ Usuario: usuarioEncontrado });
+  });
+}
+
+
 
 
 /* AGREGAR ROL REPARTIDOR */
@@ -1009,7 +1171,18 @@ module.exports = {
   getGestorGuatemala,
   getCajeroGuatemala,
   getCajeroAltaVerapaz,
-  getCajeroBajaVerapaz
+  getCajeroBajaVerapaz,
+
+  /* EDITAR PERFIL*/
+
+  editarPerfilAdmin,
+  editarPerfilCliente,
+  editarPerfilFacturador,
+  editarPerfilGestor,
+  editarPerfilCajero,
+  editarPerfilRepartidor,
+  buscarUsuario
+
 }
 
 
