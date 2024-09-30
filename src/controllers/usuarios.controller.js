@@ -923,6 +923,7 @@ function getCajeroGuatemala(req, res) {
 }
 
 
+
 function getCajeroAltaVerapaz(req, res) {
   // Verifica si el usuario tiene el rol de ADMIN
   if (req.user.rol !== 'ROL_ADMIN') {

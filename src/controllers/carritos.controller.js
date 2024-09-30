@@ -326,6 +326,7 @@ function agregarCarritoPorIdProducto(req, res) {
                 idProducto: productoEncontrado._id,
                 nombreProducto: productoEncontrado.nombreProducto,
                 marca: productoEncontrado.marca,
+                imagen: productoEncontrado.imagen,
                 cantidad: cantidad,
                 size: productoEncontrado.size, // Agrega el tamaño del producto aquí
                 precio: productoEncontrado.precio,

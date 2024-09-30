@@ -57,6 +57,25 @@ function ObtenerCategorias (req, res) {
     })
 }
 
+
+function ObtenerCategoriasRolCliente (req, res) {
+
+  if(req.user.rol !== 'ROL_CLIENTE'){
+    return res.status(500).send({ mensaje: "Unicamente el ROL_CLIENTE puede realizar esta acción "});
+  }
+
+    Categorias.find((err, CategoriasGuardadas) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ categorias: CategoriasGuardadas })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
 /*Editar Categoria*/
 function editarCategoria(req, res){
     
@@ -110,38 +129,41 @@ function getCategoriaIdRolGestor(req, res){
   /*TAREA DE ROL ADMIN */
 
 /* agregar,  editar eliminar  ROL_ADMIN, leer, leer por id, */
-function AgregarCategoriaRolAdmin(req, res){
-
-  if(req.user.rol !== 'ROL_ADMIN'){
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción "});
+function AgregarCategoriaRolAdmin(req, res) {
+  if (req.user.rol !== 'ROL_ADMIN') {
+      return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción " });
   }
 
   var parametros = req.body;
   var categoriasModel = new Categorias();
 
-  if(parametros.nombreCategoria && parametros.descripcionCategoria) {
-    categoriasModel.nombreCategoria = parametros.nombreCategoria;
-    categoriasModel.descripcionCategoria = parametros.descripcionCategoria;
-    categoriasModel.imagen = null;
-    categoriasModel.idUsuario = req.user.sub;
+  // Obtener la ruta de la imagen
+  const imagenPath = req.file ? req.file.filename : null; // Solo el nombre del archivo
 
-    Categorias.find({ nombreCategoria : parametros.nombreCategoria }, (err, categoriaEncontrada) => {
-      if ( categoriaEncontrada.length == 0 ) {
-        categoriasModel.save((err, categoriaGuardada) => {
-            if (err) return res.status(500).send({ mensaje: 'Error en la peticion' });
-            if(!categoriaGuardada) return res.status(500).send({ mensaje: 'Error al agregar la categoria'});
-            
-            return res.status(200).send({ categorias: categoriaGuardada });
-        })
-} else {
-    return res.status(500).send({ mensaje: 'Este nombre de categoría, ya  se encuentra utilizado. Según la política de la empresa, no es posible repetir nombres de categoría.' });
+  if (parametros.nombreCategoria && parametros.descripcionCategoria) {
+      categoriasModel.nombreCategoria = parametros.nombreCategoria;
+      categoriasModel.descripcionCategoria = parametros.descripcionCategoria;
+      categoriasModel.imagen = imagenPath; // Asigna la imagen aquí
+      categoriasModel.idUsuario = req.user.sub;
+
+      Categorias.find({ nombreCategoria: parametros.nombreCategoria }, (err, categoriaEncontrada) => {
+          if (categoriaEncontrada.length == 0) {
+              categoriasModel.save((err, categoriaGuardada) => {
+                  if (err) return res.status(500).send({ mensaje: 'Error en la petición' });
+                  if (!categoriaGuardada) return res.status(500).send({ mensaje: 'Error al agregar la categoría' });
+
+                  return res.status(200).send({ categorias: categoriaGuardada });
+              });
+          } else {
+              return res.status(500).send({ mensaje: 'Este nombre de categoría ya se encuentra utilizado.' });
+          }
+      });
+  } else {
+      return res.status(500).send({ mensaje: 'Debe llenar los campos necesarios' });
+  }
 }
 
-    })
-  }else{
-    return res.status(500).send({ mensaje: 'Debe llenar los campos necesarios'});
-}
-}
+
 function editarCategoriaRolAdmin(req, res){
     
   if(req.user.rol !== 'ROL_ADMIN'){
@@ -290,5 +312,6 @@ AgregarCategoriaRolAdmin,
 editarCategoriaRolAdmin,
 eliminarCategoriaRolAdmin,
 getCategoriaRolAdmin,
-getCategoriaIDRolAdmin
+getCategoriaIDRolAdmin,
+ObtenerCategoriasRolCliente
 }

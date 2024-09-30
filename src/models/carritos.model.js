@@ -9,6 +9,7 @@ var CarritosSchema = Schema({
         marca:String,
         cantidad: Number,
         size:String,
+        imagen: String,
         precio: Number,
         subTotal: Number,
         descripcionCategoria: [{
