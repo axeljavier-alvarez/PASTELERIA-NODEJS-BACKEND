@@ -5,8 +5,24 @@ const bcrypt = require('bcrypt-nodejs');
 const jwt = require('../services/jwt');
 
 
-function AgregarSucursal(req, res) {
+function obtenerSucursalesTodas(req, res) {
+    if (req.user.rol !== 'ROL_ADMIN') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción " });
+    }
 
+    Sucursales.find((err, sucursalesObtenidas) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ sucursales: sucursalesObtenidas })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */
+    })
+}
+
+function AgregarSucursal(req, res) {
     if (req.user.rol !== 'ROL_ADMIN') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción " });
     }
@@ -16,9 +32,8 @@ function AgregarSucursal(req, res) {
     const idEmpresa = req.params.ID; // ID de la empresa desde la ruta
 
     // Validar que se reciban los parámetros necesarios
-    // Validar que se reciban los parámetros necesarios
-    if (!parametros.nombreSucursal || !parametros.direccionSucursal || !parametros.telefonoSucursal || !parametros.email) {
-        return res.status(400).send({ mensaje: 'Faltan parámetros necesarios (nombreSucursal, direccionSucursal, telefonoSucursal, email).' });
+    if (!parametros.nombreSucursal || !parametros.direccionSucursal || !parametros.telefonoSucursal || !parametros.departamento || !parametros.municipio) {
+        return res.status(400).send({ mensaje: 'Faltan parámetros necesarios (nombreSucursal, direccionSucursal, telefonoSucursal, departamento, municipio).' });
     }
 
     // Buscar la empresa por ID
@@ -26,63 +41,41 @@ function AgregarSucursal(req, res) {
         if (err) return res.status(500).send({ mensaje: 'Error al buscar la empresa.' });
         if (!empresaEncontrada) return res.status(404).send({ mensaje: 'Empresa no encontrada.' });
 
-        // Buscar el usuario por email
-        Usuarios.findOne({ email: parametros.email }, (err, usuarioEncontrado) => {
-            if (err) return res.status(500).send({ mensaje: 'Error al buscar el usuario.' });
-            if (!usuarioEncontrado) return res.status(404).send({ mensaje: 'Usuario no encontrado por el email proporcionado.' });
+        // Buscar si la sucursal ya existe
+        Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal, idEmpresa: idEmpresa }, (err, sucursalEncontrada) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar la sucursal.' });
 
-            // Verificar que el usuario tenga el rol ROL_GESTOR
-            if (usuarioEncontrado.rol !== 'ROL_GESTOR') {
-                return res.status(403).send({ mensaje: 'Solo los usuarios con rol ROL_GESTOR pueden ser agregados a una sucursal.' });
+            if (sucursalEncontrada) {
+                // Sucursal ya existe, solo se podría añadir más información si es necesario
+                return res.status(400).send({ mensaje: 'La sucursal ya existe.' });
+            } else {
+                // Sucursal no existe, crear una nueva
+                const nuevaSucursal = new Sucursales({
+                    nombreSucursal: parametros.nombreSucursal,
+                    direccionSucursal: parametros.direccionSucursal,
+                    telefonoSucursal: parametros.telefonoSucursal,
+                    departamento: parametros.departamento,
+                    municipio: parametros.municipio,
+                    imagen: null,
+                    idEmpresa: idEmpresa,
+                    gestorSucursales: [],
+                    datosEmpresa: [{
+                        idEmpresa: empresaEncontrada._id,
+                        nombreEmpresa: empresaEncontrada.nombre, // Cambia esto según el nombre del campo en tu modelo de Empresas
+                        direccion: empresaEncontrada.direccion, // Cambia esto según el nombre del campo en tu modelo de Empresas
+                        telefono: empresaEncontrada.telefono // Cambia esto según el nombre del campo en tu modelo de Empresas
+                    }]
+                });
+
+                // Guardar la nueva sucursal en la base de datos
+                nuevaSucursal.save((err, sucursalGuardada) => {
+                    if (err) return res.status(500).send({ mensaje: 'Error al guardar la sucursal.' });
+                    return res.status(200).send({ mensaje: 'Sucursal agregada con éxito.', sucursales: sucursalGuardada });
+                });
+                
             }
-
-            // Buscar si la sucursal ya existe
-            Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal, idEmpresa: idEmpresa }, (err, sucursalEncontrada) => {
-                if (err) return res.status(500).send({ mensaje: 'Error al buscar la sucursal.' });
-
-                if (sucursalEncontrada) {
-                    // Sucursal ya existe, agregar el usuario al array gestorSucursales
-                    sucursalEncontrada.gestorSucursales.push({
-                        idUsuario: usuarioEncontrado._id,
-                        nombre: usuarioEncontrado.nombre,
-                        apellido: usuarioEncontrado.apellido,
-                        email: usuarioEncontrado.email,
-                        rol: usuarioEncontrado.rol
-                    });
-
-                    // Guardar la sucursal actualizada
-                    sucursalEncontrada.save((err, sucursalActualizada) => {
-                        if (err) return res.status(500).send({ mensaje: 'Error al actualizar la sucursal.' });
-                        return res.status(200).send({ mensaje: 'Usuario agregado a la sucursal existente.', sucursales: sucursalActualizada });
-                    });
-                } else {
-                    // Sucursal no existe, crear una nueva
-                    const nuevaSucursal = new Sucursales({
-                        nombreSucursal: parametros.nombreSucursal,
-                        direccionSucursal: parametros.direccionSucursal,
-                        telefonoSucursal: parametros.telefonoSucursal,
-                        idEmpresa: idEmpresa,
-                        gestorSucursales: [{
-                            idUsuario: usuarioEncontrado._id,
-                            nombre: usuarioEncontrado.nombre,
-                            apellido: usuarioEncontrado.apellido,
-                            email: usuarioEncontrado.email,
-                            rol: usuarioEncontrado.rol
-                        }]
-                    });
-
-                    // Guardar la nueva sucursal en la base de datos
-                    nuevaSucursal.save((err, sucursalGuardada) => {
-                        if (err) return res.status(500).send({ mensaje: 'Error al guardar la sucursal.' });
-                        return res.status(200).send({ mensaje: 'Sucursal agregada con éxito.', sucursales: sucursalGuardada });
-                    });
-                }
-            });
         });
     });
-
-
-
 }
 
 function AgregarSucursalPorIdEmpresaUsuario(req, res) {
@@ -356,6 +349,7 @@ module.exports = {
     AgregarSucursalPorIdEmpresaUsuario,
     verSucursalRolGestor,
     verSucursalesPorGestorRegistrado,
-    ObtenerSucursalesRolCliente
+    ObtenerSucursalesRolCliente,
+    obtenerSucursalesTodas
 }
 
