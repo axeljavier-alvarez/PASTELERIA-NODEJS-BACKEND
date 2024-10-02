@@ -258,7 +258,7 @@ function agregarFacturador(req, res) {
     usuarioModel.apellido = parametros.apellido;
     usuarioModel.email = parametros.email;
     usuarioModel.password = parametros.password;
-    usuarioModel.rol = 'ROL_GESTOR';
+    usuarioModel.rol = 'ROL_FACTURADOR';
     usuarioModel.telefono = parametros.telefono;
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
@@ -670,7 +670,7 @@ function agregarRepartidor(req, res) {
     usuarioModel.apellido = parametros.apellido;
     usuarioModel.email = parametros.email;
     usuarioModel.password = parametros.password;
-    usuarioModel.rol = 'ROL_GESTOR';
+    usuarioModel.rol = 'ROL_REPARTIDOR';
     usuarioModel.telefono = parametros.telefono;
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
@@ -822,7 +822,7 @@ function agregarUsuarioCajero(req, res) {
     usuarioModel.apellido = parametros.apellido;
     usuarioModel.email = parametros.email;
     usuarioModel.password = parametros.password;
-    usuarioModel.rol = 'ROL_GESTOR';
+    usuarioModel.rol = 'ROL_CAJERO';
     usuarioModel.telefono = parametros.telefono;
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
