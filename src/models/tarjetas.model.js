@@ -3,6 +3,7 @@ const Schema = mongoose.Schema;
 
 const TarjetaSchema = Schema({
 
+   saldo: String,
    numeroTarjeta: Number,
    nombreUsuario: String,
    mesExpiracion: Number,

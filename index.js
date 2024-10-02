@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const app = require('./app');
 const bcrypt = require("bcrypt-nodejs");
 const Usuarios = require('./src/models/usuarios.model');
+const Tarjeta= require('./src/controllers/tarjetas.controller');
 // const Tarjeta = require('./src/models/tarjetas.model'); // Ajusta la ruta
 
 // BASE DE DATOS
@@ -11,6 +12,28 @@ mongoose.connect('mongodb://127.0.0.1:27017/BACKEND_PASTELERIA', {useNewUrlParse
     console.log('Se encuentra conectado a la base de datos.');
 
     app.listen(3000,function(req, res){
+
+        Tarjeta.RegistrarTarjetaUno(),
+        Tarjeta.RegistrarTarjetaDos(),
+        Tarjeta.RegistrarTarjetaTres(),
+        Tarjeta.RegistrarTarjetaCuatro(),
+        Tarjeta.RegistrarTarjetaCinco(),
+        Tarjeta.RegistrarTarjetaSeis(),
+        Tarjeta.RegistrarTarjetaSiete(),
+        Tarjeta.RegistrarTarjetaOcho(),
+        Tarjeta.RegistrarTarjetaNueve(),
+        Tarjeta.RegistrarTarjetaDiez(),
+        Tarjeta.RegistrarTarjetaOnce(),
+        Tarjeta.RegistrarTarjetaDoce(),
+        Tarjeta.RegistrarTarjetaTrece(),
+        Tarjeta.RegistrarTarjetaCatorce(),
+        Tarjeta.RegistrarTarjetaQuince(),
+        Tarjeta.RegistrarTarjetaDieciseis(),
+        Tarjeta.RegistrarTarjetaDiecisiete(),
+        Tarjeta.RegistrarTarjetaDieciocho(),
+        Tarjeta.RegistrarTarjetaDiecinueve(),
+        Tarjeta.RegistrarTarjetaVeinte(),
+
         console.log('El servidor corre sin problemas');  
         
     })
