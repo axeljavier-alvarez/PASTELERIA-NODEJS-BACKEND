@@ -933,10 +933,6 @@ function getUsuarioCajero(req, res) {
 
 
 function getUsuarioIdCajero(req, res) {
-  if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-  }
-
   var idCajero = req.params.ID;
 
   Usuarios.findById(idCajero, (err, usuariosEncontrados) => {
@@ -1035,30 +1031,35 @@ function getCajeroBajaVerapaz(req, res) {
 
 /*EDITAR PERFIL */
 function editarPerfilAdmin(req, res) {
-  var idAdmin = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.imagen = null;
+  if (req.user.rol !== 'ROL_ADMIN') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_ADMIN puede realizar esta acción" });
+  }
 
-  Usuarios.findByIdAndUpdate(idAdmin, parametros, { new: true }, (err, editarControl) => {
-    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
 
-    if (!editarControl) return res.status(500).send({ mensaje: "Error al editar el Administrador" });
+  var idUsuario = req.params.ID;
+  var parametros = req.body;
 
-    return res.status(200).send({ Usuario: editarControl });
-  });
+  
+  Usuarios.findByIdAndUpdate(idUsuario, parametros,{ new: true },(err, editarUsuario) => {
+
+      if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+
+      if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar la empresa" });
+
+      return res.status(200).send({ Usuario: editarUsuario });
+
+    }
+  );
 }
 
 
 function editarPerfilCliente(req, res) {
+  if (req.user.rol !== 'ROL_CLIENTE') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción" });
+  }
+
+
   var idCliente = req.params.ID;
   var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 
@@ -1082,6 +1083,11 @@ function editarPerfilCliente(req, res) {
 }
 
 function editarPerfilFacturador(req, res) {
+
+  if (req.user.rol !== 'ROL_FACTURADOR') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_FACTURADOR puede realizar esta acción" });
+  }
+
   var idFacturador = req.params.ID;
   var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 
@@ -1105,6 +1111,11 @@ function editarPerfilFacturador(req, res) {
 }
 
 function editarPerfilGestor(req, res) {
+
+  if (req.user.rol !== 'ROL_GESTOR') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_GESTOR puede realizar esta acción" });
+  }
+
   var idGestor = req.params.ID;
   var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 
@@ -1128,6 +1139,11 @@ function editarPerfilGestor(req, res) {
 }
 
 function editarPerfilCajero(req, res) {
+
+  if (req.user.rol !== 'ROL_CAJERO') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción" });
+  }
+
   var idCajero = req.params.ID;
   var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 
@@ -1151,6 +1167,12 @@ function editarPerfilCajero(req, res) {
 }
 
 function editarPerfilRepartidor(req, res) {
+
+  
+  if (req.user.rol !== 'ROL_REPARTIDOR') {
+    return res.status(403).send({ mensaje: "Únicamente el ROL_REPARTIDOR puede realizar esta acción" });
+  }
+
   var idRepartidor = req.params.ID;
   var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
 

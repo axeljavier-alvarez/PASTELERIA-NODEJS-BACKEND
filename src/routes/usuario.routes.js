@@ -89,7 +89,7 @@ api.get('/getCajeroBajaVerapaz', autenticacionToken.Auth, usuarioController.getC
 
 
 /*EDITAR PERFIL*/
-api.put('/editarPerfilAdmin', autenticacionToken.Auth, usuarioController.editarPerfilAdmin);
+api.put('/editarPerfilAdmin/:ID', autenticacionToken.Auth, usuarioController.editarPerfilAdmin);
 api.put('/editarPerfilCliente/:ID', autenticacionToken.Auth, usuarioController.editarPerfilCliente)
 api.put('/editarPerfilFacturador/:ID', autenticacionToken.Auth, usuarioController.editarPerfilFacturador);
 api.put('/editarPerfilGestor/:ID', autenticacionToken.Auth , usuarioController.editarPerfilGestor);
