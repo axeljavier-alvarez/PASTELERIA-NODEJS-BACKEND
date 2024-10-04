@@ -304,15 +304,14 @@ function agregarFacturador(req, res) {
 
 /* 3. agregar, ROL_EMPLEADO por defecto */
 function agregarEmpleado(req, res) {
-
   if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-
+    return res.status(403).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
   var parametros = req.body;
   var usuarioModel = new Usuarios();
-  if (parametros.nombre && parametros.apellido && parametros.email && parametros.password) {
+
+  if (parametros.nombre && parametros.apellido && parametros.email && parametros.password && parametros.nombreSucursal) {
     usuarioModel.nombre = parametros.nombre;
     usuarioModel.apellido = parametros.apellido;
     usuarioModel.email = parametros.email;
@@ -322,35 +321,53 @@ function agregarEmpleado(req, res) {
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
     usuarioModel.municipio = parametros.municipio;
-    usuarioModel.imagen = null;
+    usuarioModel.imagen = req.file ? req.file.filename : null; // Obtener el nombre del archivo de la imagen
 
-    Usuarios.find({ email: parametros.email }, (err, empleadoGuardado) => {
-      if (empleadoGuardado.length == 0) {
-        bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
-          usuarioModel.password = passwordEncriptada;
+    // Buscar si la sucursal existe
+    Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal }, (err, sucursalEncontrada) => {
+      if (err) return res.status(500).send({ mensaje: "Error al buscar la sucursal." });
+      if (!sucursalEncontrada) return res.status(404).send({ mensaje: "Sucursal no encontrada." });
 
+      Usuarios.find({ email: parametros.email }, (err, empleadoGuardado) => {
+        if (empleadoGuardado.length == 0) {
+          bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
+            usuarioModel.password = passwordEncriptada;
 
+            usuarioModel.save((err, empleadoGuardado) => {
+              if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+              if (!empleadoGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
 
-          usuarioModel.save((err, empleadoGuardado) => {
-            if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-            if (!empleadoGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
+              // Agregar al gestor en la sucursal
+              sucursalEncontrada.gestorSucursales.push({
+                idUsuario: empleadoGuardado._id,
+                nombre: empleadoGuardado.nombre,
+                apellido: empleadoGuardado.apellido,
+                email: empleadoGuardado.email,
+                rol: empleadoGuardado.rol
+              });
 
-            return res.status(200).send({ usuario: empleadoGuardado });
+              // Guardar la sucursal actualizada
+              sucursalEncontrada.save((err, sucursalActualizada) => {
+                if (err) return res.status(500).send({ mensaje: "Error al actualizar la sucursal." });
+
+                return res.status(200).send({ usuario: empleadoGuardado, sucursal: sucursalActualizada });
+              });
+            });
           });
-        });
-      } else {
-        return res.status(500).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
-      }
-
-    })
+        } else {
+          return res.status(400).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
+        }
+      });
+    });
   } else {
-    return res.status(500).send({ mensaje: "Complete los campos obligatorios" });
+    return res.status(400).send({ mensaje: "Complete los campos obligatorios" });
   }
 }
 /* 4. agregar, ROL_GESTOR por defecto */
+
 function agregarGestor(req, res) {
   if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
+    return res.status(403).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
   var parametros = req.body;
@@ -366,7 +383,7 @@ function agregarGestor(req, res) {
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
     usuarioModel.municipio = parametros.municipio;
-    usuarioModel.imagen = null;
+    usuarioModel.imagen = req.file ? req.file.filename : null; // Obtener el nombre del archivo de la imagen
 
     // Buscar si la sucursal existe
     Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal }, (err, sucursalEncontrada) => {
@@ -400,15 +417,14 @@ function agregarGestor(req, res) {
             });
           });
         } else {
-          return res.status(500).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
+          return res.status(400).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
         }
       });
     });
   } else {
-    return res.status(500).send({ mensaje: "Complete los campos obligatorios" });
+    return res.status(400).send({ mensaje: "Complete los campos obligatorios" });
   }
 }
-
 
 /* 5. ver usuarios con ROL_FACTURADOR  funcion 3*/
 function getUsuariosRolFacturador(req, res) {

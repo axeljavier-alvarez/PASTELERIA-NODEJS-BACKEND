@@ -2,7 +2,7 @@ const express = require('express');
 
 const usuarioController = require('../controllers/usuarios.controller');
 const autenticacionToken = require ('../middlewares/autenticacion');
-
+const MulterImagen = require('../middlewares/multer')
 const api = express.Router();
 
 api.post('/login', usuarioController.Login);
@@ -26,9 +26,16 @@ api.put ('/editarRolAdmin/:ID' , autenticacionToken.Auth, usuarioController.edit
 /* agregar, ROL_FACTURADOR por defecto post*/
 api.post ('/agregarRolFacturador', autenticacionToken.Auth,  usuarioController.agregarFacturador);
 /* agregar, ROL_EMPLEADO por defecto post*/
-api.post ('/agregarRolEmpleado',  autenticacionToken.Auth, usuarioController.agregarEmpleado);
-/* agregar, ROL_GESTOR por defecto post*/
-api.post ('/agregarRolGestor',  autenticacionToken.Auth, usuarioController.agregarGestor);
+//api.post ('/agregarRolEmpleado',  autenticacionToken.Auth, usuarioController.agregarEmpleado);
+api.post('/agregarRolEmpleado', 
+    autenticacionToken.Auth, 
+    MulterImagen.single('imagen'), // Usa el middleware para imagen
+    usuarioController.agregarEmpleado
+);
+/* cambiar ruta*/
+//api.post ('/agregarRolGestor',  autenticacionToken.Auth, usuarioController.agregarGestor);
+api.post('/agregarGestor', autenticacionToken.Auth,  MulterImagen.single('imagen'), usuarioController.agregarGestor);
+
 /* ver usuarios con ROL_FACTURADOR get */
 api.get ('/getUsuariosRolFacturador', autenticacionToken.Auth, usuarioController.getUsuariosRolFacturador);
 /* ver usuarios con ROL_EMPLEADO  get*/
