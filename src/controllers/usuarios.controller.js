@@ -242,7 +242,7 @@ function agregarClienteRolAdmin(req, res) {
 
 function agregarFacturador(req, res) {
   if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
+    return res.status(403).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
   var parametros = req.body;
@@ -258,7 +258,7 @@ function agregarFacturador(req, res) {
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
     usuarioModel.municipio = parametros.municipio;
-    usuarioModel.imagen = null;
+    usuarioModel.imagen = req.file ? req.file.filename : null; // Obtener el nombre del archivo de la imagen
 
     // Buscar si la sucursal existe
     Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal }, (err, sucursalEncontrada) => {
@@ -292,12 +292,12 @@ function agregarFacturador(req, res) {
             });
           });
         } else {
-          return res.status(500).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
+          return res.status(400).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
         }
       });
     });
   } else {
-    return res.status(500).send({ mensaje: "Complete los campos obligatorios" });
+    return res.status(400).send({ mensaje: "Complete los campos obligatorios" });
   }
 }
 

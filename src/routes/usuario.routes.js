@@ -24,7 +24,12 @@ api.get('/getUsuarioRolCliente/:ID', autenticacionToken.Auth, usuarioController.
 api.put ('/editarRolAdmin/:ID' , autenticacionToken.Auth, usuarioController.editarUsuarioRolAdmin);
 
 /* agregar, ROL_FACTURADOR por defecto post*/
-api.post ('/agregarRolFacturador', autenticacionToken.Auth,  usuarioController.agregarFacturador);
+//api.post ('/agregarRolFacturador', autenticacionToken.Auth,  usuarioController.agregarFacturador);
+api.post('/agregarRolFacturador', 
+    autenticacionToken.Auth, 
+    MulterImagen.single('imagen'), // Usa el middleware para imagen
+    usuarioController.agregarFacturador
+);
 /* agregar, ROL_EMPLEADO por defecto post*/
 //api.post ('/agregarRolEmpleado',  autenticacionToken.Auth, usuarioController.agregarEmpleado);
 api.post('/agregarRolEmpleado', 
