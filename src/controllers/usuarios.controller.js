@@ -159,11 +159,6 @@ function getUsuariosRolCliente(req, res) {
 
 /* 4. ver a un perfil que tenga ROL_CLIENTE por el ID*/
 function getUsuarioIdRolCliente(req, res) {
-  if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-
-  }
-
 
   // buscar por id
   var idCliente = req.params.ID;
@@ -553,9 +548,7 @@ function getUsuariosRolFacturador(req, res) {
 
 /* Ver usuario propio del ROL_FACTURADOR*/
 function getUsuarioIdRolFacturador(req, res) {
-  if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-  }
+  
   // buscar por id
   var idFacturador = req.params.ID;
 
@@ -642,9 +635,7 @@ function getUsuariosRoLGestor(req, res) {
 
 /* Ver usuario propio del ROL_GESTOR*/
 function getUsuarioIdRolGestor(req, res) {
-  if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-  }
+
   // buscar por id
   var idFacturador = req.params.ID;
 
@@ -793,9 +784,7 @@ function getUsuariosRolRepartidor(req, res) {
 
 
 function getUsuarioIdRolRepartidor(req, res) {
-  if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
-  }
+  
   // buscar por id
   var idRepartidor = req.params.ID;
 
