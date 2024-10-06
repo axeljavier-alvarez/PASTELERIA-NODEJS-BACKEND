@@ -25,18 +25,10 @@ api.put ('/editarRolAdmin/:ID' , autenticacionToken.Auth, usuarioController.edit
 
 /* agregar, ROL_FACTURADOR por defecto post*/
 //api.post ('/agregarRolFacturador', autenticacionToken.Auth,  usuarioController.agregarFacturador);
-api.post('/agregarRolFacturador', 
-    autenticacionToken.Auth, 
-    MulterImagen.single('imagen'), // Usa el middleware para imagen
-    usuarioController.agregarFacturador
-);
+api.post('/agregarRolFacturador', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.agregarFacturador);
 /* agregar, ROL_EMPLEADO por defecto post*/
 //api.post ('/agregarRolEmpleado',  autenticacionToken.Auth, usuarioController.agregarEmpleado);
-api.post('/agregarRolEmpleado', 
-    autenticacionToken.Auth, 
-    MulterImagen.single('imagen'), // Usa el middleware para imagen
-    usuarioController.agregarEmpleado
-);
+api.post('/agregarRolEmpleado', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.agregarEmpleado);
 /* cambiar ruta*/
 //api.post ('/agregarRolGestor',  autenticacionToken.Auth, usuarioController.agregarGestor);
 api.post('/agregarGestor', autenticacionToken.Auth,  MulterImagen.single('imagen'), usuarioController.agregarGestor);
@@ -74,7 +66,8 @@ api.get('/getUsuarioRolGestor/:ID', autenticacionToken.Auth, usuarioController.g
 
 
 /* ---------- ADMINISTRACIÓN DEL ROL REPARTIDOR --------- */
-api.post ('/agregarRolRepartidor', autenticacionToken.Auth,  usuarioController.agregarRepartidor);
+//api.post ('/agregarRolRepartidor', autenticacionToken.Auth,  usuarioController.agregarRepartidor);
+api.post('/agregarRolRepartidor', autenticacionToken.Auth,  MulterImagen.single('imagen'), usuarioController.agregarRepartidor);
 // cambio
 api.delete ('/eliminarRolRepartidor/:ID', autenticacionToken.Auth, usuarioController.eliminarUsuarioRolRepartidor);
 api.put ('/editarRolRepartidor/:ID', autenticacionToken.Auth, usuarioController.editarUsuarioRolRepartidor);
@@ -82,7 +75,8 @@ api.get('/getUsuarioRolRepartidor', autenticacionToken.Auth, usuarioController.g
 api.get('/getUsuarioIdRolRepartidor/:ID', autenticacionToken.Auth, usuarioController.getUsuarioIdRolRepartidor);
 
 //ROL CAJERO
- api.post('/agregarRolCajero' , autenticacionToken.Auth, usuarioController.agregarUsuarioCajero);
+ //api.post('/agregarRolCajero' , autenticacionToken.Auth, usuarioController.agregarUsuarioCajero);
+ api.post('/agregarRolCajero', autenticacionToken.Auth,  MulterImagen.single('imagen'), usuarioController.agregarUsuarioCajero);
  api.put('/editarRolCajero/:ID', autenticacionToken.Auth , usuarioController.editarUsuarioCajero);
  api.delete('/eliminarRolCajero/:ID', autenticacionToken.Auth, usuarioController.eliminarUsuarioCajero);
  api.get ('/getRolCajero', autenticacionToken.Auth , usuarioController.getUsuarioCajero);

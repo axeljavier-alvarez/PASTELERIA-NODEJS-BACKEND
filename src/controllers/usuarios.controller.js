@@ -265,29 +265,29 @@ function agregarFacturador(req, res) {
       if (err) return res.status(500).send({ mensaje: "Error al buscar la sucursal." });
       if (!sucursalEncontrada) return res.status(404).send({ mensaje: "Sucursal no encontrada." });
 
-      Usuarios.find({ email: parametros.email }, (err, gestorGuardado) => {
-        if (gestorGuardado.length == 0) {
+      Usuarios.find({ email: parametros.email }, (err, facturadorGuardado) => {
+        if (facturadorGuardado.length == 0) {
           bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
             usuarioModel.password = passwordEncriptada;
 
-            usuarioModel.save((err, gestorGuardado) => {
+            usuarioModel.save((err, facturadorGuardado) => {
               if (err) return res.status(500).send({ mensaje: "Error en la petición" });
-              if (!gestorGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
+              if (!facturadorGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
 
               // Agregar al gestor en la sucursal
               sucursalEncontrada.gestorSucursales.push({
-                idUsuario: gestorGuardado._id,
-                nombre: gestorGuardado.nombre,
-                apellido: gestorGuardado.apellido,
-                email: gestorGuardado.email,
-                rol: gestorGuardado.rol
+                idUsuario: facturadorGuardado._id,
+                nombre: facturadorGuardado.nombre,
+                apellido: facturadorGuardado.apellido,
+                email: facturadorGuardado.email,
+                rol: facturadorGuardado.rol
               });
 
               // Guardar la sucursal actualizada
               sucursalEncontrada.save((err, sucursalActualizada) => {
                 if (err) return res.status(500).send({ mensaje: "Error al actualizar la sucursal." });
 
-                return res.status(200).send({ usuario: gestorGuardado, sucursal: sucursalActualizada });
+                return res.status(200).send({ usuario: facturadorGuardado, sucursal: sucursalActualizada });
               });
             });
           });
@@ -666,7 +666,7 @@ function getUsuarioIdRolGestor(req, res) {
 /* agregar ROL_REPARTIDOR por defecto */
 function agregarRepartidor(req, res) {
   if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
+    return res.status(403).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
   var parametros = req.body;
@@ -682,48 +682,47 @@ function agregarRepartidor(req, res) {
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
     usuarioModel.municipio = parametros.municipio;
-    usuarioModel.imagen = null;
+    usuarioModel.imagen = req.file ? req.file.filename : null; // Obtener el nombre del archivo de la imagen
 
     // Buscar si la sucursal existe
     Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal }, (err, sucursalEncontrada) => {
       if (err) return res.status(500).send({ mensaje: "Error al buscar la sucursal." });
       if (!sucursalEncontrada) return res.status(404).send({ mensaje: "Sucursal no encontrada." });
 
-      Usuarios.find({ email: parametros.email }, (err, gestorGuardado) => {
-        if (gestorGuardado.length == 0) {
+      Usuarios.find({ email: parametros.email }, (err, repartidorGuardado) => {
+        if (repartidorGuardado.length == 0) {
           bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
             usuarioModel.password = passwordEncriptada;
 
-            usuarioModel.save((err, gestorGuardado) => {
+            usuarioModel.save((err, repartidorGuardado) => {
               if (err) return res.status(500).send({ mensaje: "Error en la petición" });
-              if (!gestorGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
+              if (!repartidorGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
 
               // Agregar al gestor en la sucursal
               sucursalEncontrada.gestorSucursales.push({
-                idUsuario: gestorGuardado._id,
-                nombre: gestorGuardado.nombre,
-                apellido: gestorGuardado.apellido,
-                email: gestorGuardado.email,
-                rol: gestorGuardado.rol
+                idUsuario: repartidorGuardado._id,
+                nombre: repartidorGuardado.nombre,
+                apellido: repartidorGuardado.apellido,
+                email: repartidorGuardado.email,
+                rol: repartidorGuardado.rol
               });
 
               // Guardar la sucursal actualizada
               sucursalEncontrada.save((err, sucursalActualizada) => {
                 if (err) return res.status(500).send({ mensaje: "Error al actualizar la sucursal." });
 
-                return res.status(200).send({ usuario: gestorGuardado, sucursal: sucursalActualizada });
+                return res.status(200).send({ usuario: repartidorGuardado, sucursal: sucursalActualizada });
               });
             });
           });
         } else {
-          return res.status(500).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
+          return res.status(400).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
         }
       });
     });
   } else {
-    return res.status(500).send({ mensaje: "Complete los campos obligatorios" });
+    return res.status(400).send({ mensaje: "Complete los campos obligatorios" });
   }
-
 }
 
 // 2. eliminar usuario
@@ -816,7 +815,7 @@ function getUsuarioIdRolRepartidor(req, res) {
 
 function agregarUsuarioCajero(req, res) {
   if (req.user.rol !== 'ROL_ADMIN') {
-    return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
+    return res.status(403).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
   var parametros = req.body;
@@ -832,46 +831,46 @@ function agregarUsuarioCajero(req, res) {
     usuarioModel.direccion = parametros.direccion;
     usuarioModel.departamento = parametros.departamento;
     usuarioModel.municipio = parametros.municipio;
-    usuarioModel.imagen = null;
+    usuarioModel.imagen = req.file ? req.file.filename : null; // Obtener el nombre del archivo de la imagen
 
     // Buscar si la sucursal existe
     Sucursales.findOne({ nombreSucursal: parametros.nombreSucursal }, (err, sucursalEncontrada) => {
       if (err) return res.status(500).send({ mensaje: "Error al buscar la sucursal." });
       if (!sucursalEncontrada) return res.status(404).send({ mensaje: "Sucursal no encontrada." });
 
-      Usuarios.find({ email: parametros.email }, (err, gestorGuardado) => {
-        if (gestorGuardado.length == 0) {
+      Usuarios.find({ email: parametros.email }, (err, cajeroGuardado) => {
+        if (cajeroGuardado.length == 0) {
           bcrypt.hash(parametros.password, null, null, (err, passwordEncriptada) => {
             usuarioModel.password = passwordEncriptada;
 
-            usuarioModel.save((err, gestorGuardado) => {
+            usuarioModel.save((err, cajeroGuardado) => {
               if (err) return res.status(500).send({ mensaje: "Error en la petición" });
-              if (!gestorGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
+              if (!cajeroGuardado) return res.status(500).send({ mensaje: "Error al agregar el empleado" });
 
               // Agregar al gestor en la sucursal
               sucursalEncontrada.gestorSucursales.push({
-                idUsuario: gestorGuardado._id,
-                nombre: gestorGuardado.nombre,
-                apellido: gestorGuardado.apellido,
-                email: gestorGuardado.email,
-                rol: gestorGuardado.rol
+                idUsuario: cajeroGuardado._id,
+                nombre: cajeroGuardado.nombre,
+                apellido: cajeroGuardado.apellido,
+                email: cajeroGuardado.email,
+                rol: cajeroGuardado.rol
               });
 
               // Guardar la sucursal actualizada
               sucursalEncontrada.save((err, sucursalActualizada) => {
                 if (err) return res.status(500).send({ mensaje: "Error al actualizar la sucursal." });
 
-                return res.status(200).send({ usuario: gestorGuardado, sucursal: sucursalActualizada });
+                return res.status(200).send({ usuario: cajeroGuardado, sucursal: sucursalActualizada });
               });
             });
           });
         } else {
-          return res.status(500).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
+          return res.status(400).send({ mensaje: "Correo Existente, ingrese uno nuevo" });
         }
       });
     });
   } else {
-    return res.status(500).send({ mensaje: "Complete los campos obligatorios" });
+    return res.status(400).send({ mensaje: "Complete los campos obligatorios" });
   }
 }
 
