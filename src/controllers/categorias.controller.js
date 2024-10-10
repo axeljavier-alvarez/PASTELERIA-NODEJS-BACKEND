@@ -3,6 +3,23 @@ const jwt = require('../services/jwt');
 const Categorias = require('../models/categorias.model');
 const Productos = require('../models/productos.model');
 
+
+function ObtenerCategoriasCualquiera (req, res) {
+
+
+
+    Categorias.find((err, CategoriasGuardadas) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ categorias: CategoriasGuardadas })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
 /* agregar,  editar, eliminar  ROL_GESTOR, leer, leer por id, */
 
 /*Agregar Categoria*/
@@ -313,5 +330,6 @@ editarCategoriaRolAdmin,
 eliminarCategoriaRolAdmin,
 getCategoriaRolAdmin,
 getCategoriaIDRolAdmin,
-ObtenerCategoriasRolCliente
+ObtenerCategoriasRolCliente,
+ObtenerCategoriasCualquiera
 }

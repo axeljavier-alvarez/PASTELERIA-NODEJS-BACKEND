@@ -5,13 +5,24 @@ var FacturasSchema = Schema({
     nit: String,
     fecha: Date,
     datosUsuario: [{
-        idUsuario: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
+        idUsuario: { type: Schema.Types.ObjectId, ref: 'Usuarios' },
         nombre: String,
         apellido: String,
         email: String
     }],
+    datosPedido: [{
+
+        idPedido: { type: Schema.Types.ObjectId, ref: 'Pedidos' },
+        fecha: Date,
+        tipoPago: String,
+        direccionEnvio: String,
+        horaEntrega: String,
+        metodoEnvio: String,
+        descuentos: Number,
+        numeroDeOrden: Number,
+    }],
     compras: [{
-        idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
+        idProducto: { type: Schema.Types.ObjectId, ref: 'Productos' },
         nombreProducto: String,
         cantidad: Number,
         precio: Number,
@@ -25,10 +36,10 @@ var FacturasSchema = Schema({
             nombreSucursal: String,
             direccionSucursal: String,
             telefonoSucursal: String
-        }] 
+        }]
     }],
     total: Number
-    
+
 });
 
-module.exports = mongoose.model('Facturas',FacturasSchema);
+module.exports = mongoose.model('Facturas', FacturasSchema);

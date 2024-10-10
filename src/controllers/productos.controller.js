@@ -3,6 +3,25 @@ const Productos = require('../models/productos.model');
 const Sucursales = require('../models/sucursales.model');
 const mongoose = require('mongoose');
 
+
+/*  SIN TOKEN */
+
+function ObtenerProductosCualquiera (req, res) {
+
+
+
+    Productos.find((err, ProductosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ productos: ProductosEncontrados })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
 function agregarProductoRolGestor(req, res) {
     if (req.user.rol !== 'ROL_GESTOR') {
         return res.status(403).json({ mensaje: "Unicamente el ROL_GESTOR puede realizar esta acción" });
@@ -371,5 +390,6 @@ module.exports = {
     verProductosPorId,
     obtenerProductosPorIdSucursal,
     verProductosPorIdRolCliente,
-    verProductosRolCliente
+    verProductosRolCliente,
+    ObtenerProductosCualquiera
 }

@@ -105,6 +105,7 @@ function RegistrarTarjetaUno(numeroTarjeta = 4542564589521478, saldo = 45000, no
             console.log('El número de tarjeta no es válido.');
             return;
         }
+        
 
         modeloTarjeta.tipoTarjeta = tipoTarjeta;
         modeloTarjeta.numeroTarjeta = numeroTarjeta;

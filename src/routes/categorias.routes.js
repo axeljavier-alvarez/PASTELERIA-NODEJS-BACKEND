@@ -27,5 +27,9 @@ api.get ('/getCategoriasIDRolAdmin/:ID', autenticacionToken.Auth, CategoriasCont
 api.get('/getCategoriasRolCliente', autenticacionToken.Auth, CategoriasController.ObtenerCategoriasRolCliente);
 
 
+/* SIN TOKEN */
+api.get ('/obtenerCategoriasCualquiera', CategoriasController.ObtenerCategoriasCualquiera);
+
+
 /* al momento de subir esto a github, eliminar las librerias :) */
 module.exports= api;

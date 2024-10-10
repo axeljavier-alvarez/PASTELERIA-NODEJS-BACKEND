@@ -3,15 +3,16 @@ const Carritos = require('../models/carritos.model');
 const Usuarios = require('../models/usuarios.model');
 const Productos = require('../models/productos.model');
 
+
+
 /* GENERAR PEDIDO OVERALL */
 function generarPedido(req, res) {
- 
     if (req.user.rol !== 'ROL_CLIENTE') {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
     
     const idCarrito = req.params.idCarrito; 
-    const { tipoPago, direccionEnvio, fechaEntrega, metodoEnvio } = req.body; 
+    const { tipoPago, direccionEnvio } = req.body; 
 
     // Buscar el carrito del usuario
     Carritos.findById(idCarrito, (err, carritoEncontrado) => {
@@ -24,6 +25,14 @@ function generarPedido(req, res) {
             if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
             if (!usuario) return res.status(404).send({ mensaje: "Usuario no encontrado" });
 
+            // Ajustar el total si el método de envío es "moto"
+            let totalPedido = carritoEncontrado.total;
+            const metodoEnvio = "moto"; // Asignar el método de envío
+            
+            if (metodoEnvio === "moto") {
+                totalPedido += 10; // Incrementar el total en 10
+            }
+
             // Crear el nuevo pedido
             const nuevoPedido = new Pedidos({
                 fecha: new Date(), // Fecha actual
@@ -31,7 +40,6 @@ function generarPedido(req, res) {
                 tipoPago: tipoPago,
                 estado: 'En espera',
                 direccionEnvio: direccionEnvio,
-                fechaEntrega: fechaEntrega,
                 horaEntrega: null,
                 metodoEnvio: metodoEnvio,
                 descuentos: null,
@@ -45,7 +53,7 @@ function generarPedido(req, res) {
                     telefono: usuario.telefono 
                 }],
                 compras: carritoEncontrado.compras,
-                total: carritoEncontrado.total
+                total: totalPedido // Usar el total ajustado
             });
 
             // Generar el número de orden automáticamente

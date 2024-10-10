@@ -8,7 +8,6 @@ var PedidosSchema = Schema({
     tipoPago: String ,
     estado:String,
     direccionEnvio: String,
-    fechaEntrega: Date,
     horaEntrega: String,
     metodoEnvio: String,
     descuentos: Number,
