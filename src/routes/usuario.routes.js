@@ -95,12 +95,21 @@ api.get('/getCajeroBajaVerapaz', autenticacionToken.Auth, usuarioController.getC
 
 
 /*EDITAR PERFIL*/
-api.put('/editarPerfilAdmin/:ID', autenticacionToken.Auth, usuarioController.editarPerfilAdmin);
-api.put('/editarPerfilCliente/:ID', autenticacionToken.Auth, usuarioController.editarPerfilCliente)
-api.put('/editarPerfilFacturador/:ID', autenticacionToken.Auth, usuarioController.editarPerfilFacturador);
-api.put('/editarPerfilGestor/:ID', autenticacionToken.Auth , usuarioController.editarPerfilGestor);
-api.put('/editarPerfilCajero/:ID' , autenticacionToken.Auth, usuarioController.editarPerfilCajero);
-api.put('/editarPerfilRepartidor/:ID' , autenticacionToken.Auth, usuarioController.editarPerfilRepartidor);
+api.put('/editarPerfilAdmin/:ID', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilAdmin);
+
+api.put('/editarPerfilGestor/:ID', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilGestor);
+
+
+api.put('/editarPerfilCliente/:ID', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilCliente);
+
+
+
+api.put('/editarPerfilFacturador/:ID', autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilFacturador);
+
+api.put('/editarPerfilCajero/:ID' , autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilCajero);
+
+
+api.put('/editarPerfilRepartidor/:ID' , autenticacionToken.Auth, MulterImagen.single('imagen'), usuarioController.editarPerfilRepartidor);
 
 //BUSQUEDA
 

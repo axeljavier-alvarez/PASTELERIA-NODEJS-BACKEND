@@ -1035,28 +1035,25 @@ function getCajeroBajaVerapaz(req, res) {
 
 /*EDITAR PERFIL */
 function editarPerfilAdmin(req, res) {
-
   if (req.user.rol !== 'ROL_ADMIN') {
     return res.status(403).send({ mensaje: "Únicamente el ROL_ADMIN puede realizar esta acción" });
   }
 
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var idUsuario = req.params.ID;
-  var parametros = req.body;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  
-  Usuarios.findByIdAndUpdate(idUsuario, parametros,{ new: true },(err, editarUsuario) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-      if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
-
-      if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar la empresa" });
-
-      return res.status(200).send({ Usuario: editarUsuario });
-
-    }
-  );
+    return res.status(200).send({ Usuario: editarUsuario });
+  });
 }
-
 
 function editarPerfilCliente(req, res) {
   if (req.user.rol !== 'ROL_CLIENTE') {
@@ -1064,25 +1061,19 @@ function editarPerfilCliente(req, res) {
   }
 
 
-  var idCliente = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.imagen = null;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  Usuarios.findByIdAndUpdate(idCliente, parametros, { new: true }, (err, editarCliente) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-    if (!editarCliente) return res.status(500).send({ mensaje: "Error al editar el Cliente" });
-
-    return res.status(200).send({ Usuario: editarCliente });
+    return res.status(200).send({ Usuario: editarUsuario });
   });
 }
 
@@ -1092,25 +1083,19 @@ function editarPerfilFacturador(req, res) {
     return res.status(403).send({ mensaje: "Únicamente el ROL_FACTURADOR puede realizar esta acción" });
   }
 
-  var idFacturador = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.fotoPerfil = null;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  Usuarios.findByIdAndUpdate(idFacturador, parametros, { new: true }, (err, editarFacturador) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-    if (!editarFacturador) return res.status(500).send({ mensaje: "Error al editar el Facturador" });
-
-    return res.status(200).send({ Usuario: editarFacturador });
+    return res.status(200).send({ Usuario: editarUsuario });
   });
 }
 
@@ -1120,25 +1105,19 @@ function editarPerfilGestor(req, res) {
     return res.status(403).send({ mensaje: "Únicamente el ROL_GESTOR puede realizar esta acción" });
   }
 
-  var idGestor = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.fotoPerfil = null;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  Usuarios.findByIdAndUpdate(idGestor, parametros, { new: true }, (err, editarGestor) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-    if (!editarGestor) return res.status(500).send({ mensaje: "Error al editar el Gestor" });
-
-    return res.status(200).send({ Usuario: editarGestor });
+    return res.status(200).send({ Usuario: editarUsuario });
   });
 }
 
@@ -1148,25 +1127,19 @@ function editarPerfilCajero(req, res) {
     return res.status(403).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción" });
   }
 
-  var idCajero = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.imagen = null;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  Usuarios.findByIdAndUpdate(idCajero, parametros, { new: true }, (err, editarCajero) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-    if (!editarCajero) return res.status(500).send({ mensaje: "Error al editar el Cajero" });
-
-    return res.status(200).send({ Usuario: editarCajero });
+    return res.status(200).send({ Usuario: editarUsuario });
   });
 }
 
@@ -1177,25 +1150,19 @@ function editarPerfilRepartidor(req, res) {
     return res.status(403).send({ mensaje: "Únicamente el ROL_REPARTIDOR puede realizar esta acción" });
   }
 
-  var idRepartidor = req.params.ID;
-  var { nombre, apellido, email, telefono, direccion, departamento, municipio, imagen } = req.body;
+  const idUsuario = req.params.ID;
+  const parametros = req.body;
 
-  var parametros = {};
-  if (nombre) parametros.nombre = nombre;
-  if (apellido) parametros.apellido = apellido;
-  if (email) parametros.email = email;
-  if (telefono) parametros.telefono = telefono;
-  if (direccion) parametros.direccion = direccion;
-  if (departamento) parametros.departamento = departamento;
-  if (municipio) parametros.municipio = municipio;
-  if (imagen) parametros.fotoPerfil = null;
+  // Si se subió una nueva imagen, se asigna su nombre
+  if (req.file) {
+    parametros.imagen = req.file.filename; // Almacena el nombre del archivo de la imagen
+  }
 
-  Usuarios.findByIdAndUpdate(idRepartidor, parametros, { new: true }, (err, editarRepartidor) => {
+  Usuarios.findByIdAndUpdate(idUsuario, { $set: parametros }, { new: true }, (err, editarUsuario) => {
     if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!editarUsuario) return res.status(403).send({ mensaje: "Error al editar el usuario" });
 
-    if (!editarRepartidor) return res.status(500).send({ mensaje: "Error al editar el Usuario" });
-
-    return res.status(200).send({ Usuario: editarRepartidor });
+    return res.status(200).send({ Usuario: editarUsuario });
   });
 }
 
