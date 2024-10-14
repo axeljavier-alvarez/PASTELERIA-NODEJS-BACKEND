@@ -2,7 +2,9 @@ const mongoose = require('mongoose')
 var Schema = mongoose.Schema;
 
 var PedidosSchema = Schema({
-  
+    // agregado recientemente
+    idUsuario: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
+
     fecha: Date,
     tiempoEstimado: String,
     tipoPago: String ,
@@ -13,6 +15,7 @@ var PedidosSchema = Schema({
     descuentos: Number,
     numeroDeOrden: Number,
     pagoConfirmado: String,
+    incrementoEnvio: Number,
     
     /* HACE REFERENCIA A USUARIOS */
     datosUsuario: [{

@@ -3,7 +3,44 @@ const Carritos = require('../models/carritos.model');
 const Usuarios = require('../models/usuarios.model');
 const Productos = require('../models/productos.model');
 
+/* OBTENER TODOS LOS PEDIDOS */
+function ObtenerTodosLosPedidos (req, res) {
 
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    Pedidos.find((err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ pedidos: pedidosEncontrados })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
+
+
+
+/* OBTENER PEDIDO DE CLIENTE REGISTRADO */
+function verPedidosClienteRegistrado(req, res) {
+    // Verifica si el usuario está autenticado
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
+    }
+
+    // Busca los carritos del usuario usando el idUsuario directamente
+    Pedidos.find({ idUsuario: req.user.sub }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos para este cliente" });
+        }
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
 
 /* GENERAR PEDIDO OVERALL */
 function generarPedido(req, res) {
@@ -25,18 +62,21 @@ function generarPedido(req, res) {
             if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
             if (!usuario) return res.status(404).send({ mensaje: "Usuario no encontrado" });
 
-            // Ajustar el total si el método de envío es "moto"
+            // Ajustar el total y el incremento de envío si el método de envío es "moto"
             let totalPedido = carritoEncontrado.total;
             const metodoEnvio = "moto"; // Asignar el método de envío
+            let incrementoEnvio = 0; // Inicializar el incremento de envío
             
             if (metodoEnvio === "moto") {
-                totalPedido += 10; // Incrementar el total en 10
+                incrementoEnvio = 10; // Asignar incremento de envío de 10
+                totalPedido += incrementoEnvio; // Incrementar el total
             }
 
             // Crear el nuevo pedido
             const nuevoPedido = new Pedidos({
-                fecha: new Date(), // Fecha actual
-                tiempoEstimado: '30-45 minutos', // Establecer un tiempo estimado por defecto
+                idUsuario: usuario._id, // Asignar el ID del usuario que generó el pedido
+                fecha: new Date(),
+                tiempoEstimado: '30-45 minutos',
                 tipoPago: tipoPago,
                 estado: 'En espera',
                 direccionEnvio: direccionEnvio,
@@ -45,6 +85,7 @@ function generarPedido(req, res) {
                 descuentos: null,
                 numeroDeOrden: 0,
                 pagoConfirmado: null,
+                incrementoEnvio: incrementoEnvio,
                 datosUsuario: [{
                     idUsuario: usuario._id,
                     nombre: usuario.nombre, 
@@ -53,21 +94,21 @@ function generarPedido(req, res) {
                     telefono: usuario.telefono 
                 }],
                 compras: carritoEncontrado.compras,
-                total: totalPedido // Usar el total ajustado
+                total: totalPedido
             });
 
             // Generar el número de orden automáticamente
             Pedidos.countDocuments({}, (err, count) => {
                 if (err) return res.status(500).send({ mensaje: 'Error al contar los pedidos' });
-                nuevoPedido.numeroDeOrden = count + 1; // Sumar 1 al contador para el nuevo número de orden
+                nuevoPedido.numeroDeOrden = count + 1;
 
                 nuevoPedido.save((err, pedidoGuardado) => {
                     if (err) return res.status(500).send({ mensaje: 'Error al guardar el pedido' });
 
-                    // IMPORTANTE YA QUE REDUCE EL STOCK DE LA COLECCIÓN PRODUCTOS
+                    // Actualizar el stock de los productos
                     const updatesStock = carritoEncontrado.compras.map(compra => {
                         return Productos.findByIdAndUpdate(compra.idProducto, {
-                            $inc: { stock: -compra.cantidad } // Disminuir el stock por la cantidad del pedido
+                            $inc: { stock: -compra.cantidad }
                         });
                     });
 
@@ -147,5 +188,7 @@ module.exports = {
 
     generarPedido,
     verPedidosCliente,
-    eliminarPedido
+    eliminarPedido,
+    ObtenerTodosLosPedidos,
+    verPedidosClienteRegistrado,
 }

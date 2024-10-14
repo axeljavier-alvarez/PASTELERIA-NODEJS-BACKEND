@@ -5,6 +5,23 @@ const bcrypt = require('bcrypt-nodejs');
 const jwt = require('../services/jwt');
 
 
+function ObtenerSucursalesInicio (req, res) {
+
+
+
+    Sucursales.find((err, sucursalesEncontradas) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ sucursales: sucursalesEncontradas })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
+
 function obtenerSucursalesTodas(req, res) {
     if (req.user.rol !== 'ROL_ADMIN') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción " });
@@ -350,6 +367,7 @@ module.exports = {
     verSucursalRolGestor,
     verSucursalesPorGestorRegistrado,
     ObtenerSucursalesRolCliente,
-    obtenerSucursalesTodas
+    obtenerSucursalesTodas,
+    ObtenerSucursalesInicio
 }
 

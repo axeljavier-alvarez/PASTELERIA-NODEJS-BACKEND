@@ -21,6 +21,10 @@ api.get('/verSucursalIDRolAdmin/:ID', autenticacionToken.Auth , SucursalesContro
 
 api.get('/verSucursalRolAdmin',autenticacionToken.Auth , SucursalesController.verSucursalRolAdmin);
 
+
+api.get('/ObtenerSucursalesInicio', SucursalesController.ObtenerSucursalesInicio);
+
+
 // tareas del rol GESTOR
 
 /* ver todas sucursales */
