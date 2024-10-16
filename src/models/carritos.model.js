@@ -20,7 +20,9 @@ var CarritosSchema = Schema({
             idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' },
             nombreSucursal: String,
             direccionSucursal: String,
-            telefonoSucursal: String
+            telefonoSucursal: String,
+            departamento: String,
+            municipio: String
         }]
     }],
     total: Number

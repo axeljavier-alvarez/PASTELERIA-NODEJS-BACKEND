@@ -19,4 +19,8 @@ api.get('/verPedidosRolCajero', autenticacionToken.Auth, PedidosController.Obten
 api.get('/verPedidosClienteRegistrado', autenticacionToken.Auth, PedidosController.verPedidosClienteRegistrado);
 
 
+api.put('/asignarPedidoRepartidor/:idRepartidor', autenticacionToken.Auth, PedidosController.asignarPedidoRepartidor);
+
+
+
 module.exports= api;

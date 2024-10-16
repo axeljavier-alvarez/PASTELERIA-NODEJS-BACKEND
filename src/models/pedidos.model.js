@@ -8,7 +8,7 @@ var PedidosSchema = Schema({
     fecha: Date,
     tiempoEstimado: String,
     tipoPago: String ,
-    estado:String,
+    estadoPedido:String,
     direccionEnvio: String,
     horaEntrega: String,
     metodoEnvio: String,
@@ -16,6 +16,8 @@ var PedidosSchema = Schema({
     numeroDeOrden: Number,
     pagoConfirmado: String,
     incrementoEnvio: Number,
+    departamentoPedido: String,
+    municipioPedido: String,
     
     /* HACE REFERENCIA A USUARIOS */
     datosUsuario: [{
@@ -26,6 +28,16 @@ var PedidosSchema = Schema({
         telefono: Number
     }],
 
+    repartidorAsignado: [{
+
+        idRepartidor: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
+        nombre: String,
+        apellido: String,
+        email: String,
+        telefono: Number,
+        rol: String,
+        estadoRepartidor: String
+    }],
 
     compras: [{
         idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
@@ -43,7 +55,9 @@ var PedidosSchema = Schema({
             idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' },
             nombreSucursal: String,
             direccionSucursal: String,
-            telefonoSucursal: String
+            telefonoSucursal: String,
+            departamento: String,
+            municipio: String
         }] 
     }],
     total: Number

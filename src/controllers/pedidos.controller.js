@@ -10,7 +10,7 @@ function ObtenerTodosLosPedidos (req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
     }
 
-    Pedidos.find((err, pedidosEncontrados) => {
+    Pedidos.find({ estadoPedido: "En espera" },(err, pedidosEncontrados) => {
         if (err) return res.send({ mensaje: "Error: " + err })
 
         return res.send({ pedidos: pedidosEncontrados })
@@ -49,12 +49,20 @@ function generarPedido(req, res) {
     }
     
     const idCarrito = req.params.idCarrito; 
-    const { tipoPago, direccionEnvio } = req.body; 
+    const { tipoPago, direccionEnvio, municipioPedido } = req.body; 
 
     // Buscar el carrito del usuario
     Carritos.findById(idCarrito, (err, carritoEncontrado) => {
         if (err || !carritoEncontrado) {
             return res.status(404).send({ mensaje: 'Carrito no encontrado' });
+        }
+
+        // Verificar que el carrito tenga al menos un producto y que el total sea igual o mayor a 100
+        if (carritoEncontrado.compras.length === 0) {
+            return res.status(400).send({ mensaje: 'El carrito debe tener al menos un producto para generar un pedido.' });
+        }
+        if (carritoEncontrado.total < 100) {
+            return res.status(400).send({ mensaje: 'El total del carrito debe ser igual o mayor a 100.' });
         }
 
         // Obtener datos del usuario
@@ -72,13 +80,16 @@ function generarPedido(req, res) {
                 totalPedido += incrementoEnvio; // Incrementar el total
             }
 
+            // Extraer el departamento del primer elemento de datosSucursal
+            const departamento = carritoEncontrado.compras[0]?.datosSucursal[0]?.departamento || null; // Asumir el primer dato
+
             // Crear el nuevo pedido
             const nuevoPedido = new Pedidos({
                 idUsuario: usuario._id, // Asignar el ID del usuario que generó el pedido
                 fecha: new Date(),
                 tiempoEstimado: '30-45 minutos',
                 tipoPago: tipoPago,
-                estado: 'En espera',
+                estadoPedido: 'En espera',
                 direccionEnvio: direccionEnvio,
                 horaEntrega: null,
                 metodoEnvio: metodoEnvio,
@@ -86,6 +97,8 @@ function generarPedido(req, res) {
                 numeroDeOrden: 0,
                 pagoConfirmado: null,
                 incrementoEnvio: incrementoEnvio,
+                departamentoPedido: departamento, // Llenar automáticamente el departamento
+                municipioPedido: municipioPedido, // Establecer municipioPedido como nulo
                 datosUsuario: [{
                     idUsuario: usuario._id,
                     nombre: usuario.nombre, 
@@ -184,6 +197,67 @@ function eliminarPedido(req, res) {
 }
 
 
+// que el cajero asigne el pedido al repartidor
+function asignarPedidoRepartidor(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idRepartidor = req.params.idRepartidor;
+    const { numeroDeOrden } = req.body;
+
+    // Verificar que el número de orden esté presente
+    if (!numeroDeOrden) {
+        return res.status(400).send({ mensaje: 'El número de orden es requerido.' });
+    }
+
+    // Buscar el pedido por numeroDeOrden
+    Pedidos.findOne({ numeroDeOrden: numeroDeOrden }, (err, pedidoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar el pedido.' });
+        if (!pedidoEncontrado) return res.status(404).send({ mensaje: 'Pedido no encontrado.' });
+
+        // Buscar los datos del repartidor
+        Usuarios.findById(idRepartidor, (err, repartidor) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar el repartidor.' });
+            if (!repartidor) return res.status(404).send({ mensaje: 'Repartidor no encontrado.' });
+
+            // Verificar el estado del repartidor
+            if (repartidor.estadoRepartidor === 'ocupado') {
+                return res.status(400).send({ mensaje: 'El repartidor está ocupado y no puede ser asignado.' });
+            }
+
+            // Verificar si ya hay un repartidor asignado al pedido
+            if (pedidoEncontrado.repartidorAsignado.some(r => r.idRepartidor.toString() === idRepartidor)) {
+                return res.status(400).send({ mensaje: 'Este repartidor ya está asignado a este pedido.' });
+            }
+
+            // Llenar los datos del repartidor en el pedido
+            pedidoEncontrado.repartidorAsignado.push({
+                idRepartidor: repartidor._id,
+                nombre: repartidor.nombre,
+                apellido: repartidor.apellido,
+                email: repartidor.email,
+                telefono: repartidor.telefono,
+                rol: repartidor.rol,
+                estadoRepartidor: 'ocupado' // Cambiar estadoRepartidor a ocupado
+            });
+
+            // Actualizar el estado del repartidor
+            repartidor.estadoRepartidor = 'ocupado';
+            repartidor.save((err) => {
+                if (err) return res.status(500).send({ mensaje: 'Error al actualizar el estado del repartidor.' });
+
+                // Guardar los cambios en el pedido
+                pedidoEncontrado.save((err, pedidoActualizado) => {
+                    if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
+
+                    return res.status(200).send({ mensaje: 'Repartidor asignado con éxito', pedido: pedidoActualizado });
+                });
+            });
+        });
+    });
+}
+
 module.exports = {
 
     generarPedido,
@@ -191,4 +265,5 @@ module.exports = {
     eliminarPedido,
     ObtenerTodosLosPedidos,
     verPedidosClienteRegistrado,
+    asignarPedidoRepartidor
 }

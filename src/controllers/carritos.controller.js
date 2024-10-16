@@ -333,7 +333,14 @@ function agregarCarritoPorIdProducto(req, res) {
                 precio: productoEncontrado.precio,
                 subTotal: cantidad * productoEncontrado.precio,
                 descripcionCategoria: productoEncontrado.descripcionCategoria, // Agrega la categoría
-                datosSucursal: productoEncontrado.datosSucursal // Agrega los datos de sucursal
+                datosSucursal: productoEncontrado.datosSucursal.map(sucursal => ({
+                    idSucursal: sucursal.idSucursal,
+                    nombreSucursal: sucursal.nombreSucursal,
+                    direccionSucursal: sucursal.direccionSucursal,
+                    telefonoSucursal: sucursal.telefonoSucursal,
+                    departamento: sucursal.departamento, // Asegúrate de que este campo exista
+                    municipio: sucursal.municipio // Asegúrate de que este campo exista
+                }))
             };
 
             // Si no existe el carrito, crea uno nuevo
@@ -379,7 +386,15 @@ function agregarCarritoPorIdProducto(req, res) {
                             $set: {
                                 "compras.$.cantidad": cantidadNueva,
                                 "compras.$.subTotal": cantidadNueva * productoEncontrado.precio,
-                                "compras.$.size": productoEncontrado.size // Actualiza el tamaño si es necesario
+                                "compras.$.size": productoEncontrado.size, // Actualiza el tamaño si es necesario
+                                "compras.$.datosSucursal": productoEncontrado.datosSucursal.map(sucursal => ({
+                                    idSucursal: sucursal.idSucursal,
+                                    nombreSucursal: sucursal.nombreSucursal,
+                                    direccionSucursal: sucursal.direccionSucursal,
+                                    telefonoSucursal: sucursal.telefonoSucursal,
+                                    departamento: sucursal.departamento, // Asegúrate de que este campo exista
+                                    municipio: sucursal.municipio // Asegúrate de que este campo exista
+                                })) // Actualiza los datos de sucursal
                             },
                             $inc: { total: cantidad * productoEncontrado.precio }
                         },
@@ -410,6 +425,7 @@ function agregarCarritoPorIdProducto(req, res) {
         });
     });
 }
+
 
 
 /* function verCarritosClienteRegistrado(req, res) {

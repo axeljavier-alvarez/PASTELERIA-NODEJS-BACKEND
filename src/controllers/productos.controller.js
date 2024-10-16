@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 /*  SIN TOKEN */
 
-function ObtenerProductosCualquiera (req, res) {
+function ObtenerProductosCualquiera(req, res) {
 
 
 
@@ -18,7 +18,7 @@ function ObtenerProductosCualquiera (req, res) {
             {
                 productos: ["array con todos los productos"]
             }
-        */ 
+        */
     })
 }
 
@@ -78,7 +78,9 @@ function agregarProductoRolGestor(req, res) {
                 idSucursal: sucursalEncontrada._id,
                 nombreSucursal: sucursalEncontrada.nombreSucursal,
                 direccionSucursal: sucursalEncontrada.direccionSucursal,
-                telefonoSucursal: sucursalEncontrada.telefonoSucursal
+                telefonoSucursal: sucursalEncontrada.telefonoSucursal,
+                departamento: sucursalEncontrada.departamento, // Asegúrate de que este campo exista
+                municipio: sucursalEncontrada.municipio
             }];
 
             productosModel.save((err, productosGuardados) => {

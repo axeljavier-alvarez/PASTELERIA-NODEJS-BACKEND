@@ -24,6 +24,8 @@ var ProductosSchema = Schema({
         nombreSucursal: String,
         direccionSucursal: String,
         telefonoSucursal: Number,
+        departamento: String, // Asegúrate de que este campo exista
+        municipio: String // Asegúrate de que este campo exista
     }]
 
 });

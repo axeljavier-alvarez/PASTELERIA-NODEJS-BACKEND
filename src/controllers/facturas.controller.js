@@ -182,6 +182,8 @@ function GenerarFactura(req,res){
 } */
 
 
+
+    
     function CrearFacturaCliente(req, res) {
         const parametros = req.body;
     

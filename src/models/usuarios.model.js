@@ -13,7 +13,12 @@ const UsuarioSchema = Schema({
     direccion: String,
     departamento: String,
     municipio: String,
-    imagen: String
+    imagen: String,
+
+    /* nuevo campo que se necesita para el repartidor */
+    estadoRepartidor: String,
+    idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' } // Campo añadido
+
 });
 
 module.exports = mongoose.model('Usuarios', UsuarioSchema);
