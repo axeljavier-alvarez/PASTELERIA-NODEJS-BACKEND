@@ -43,5 +43,14 @@ api.get('/verTodasSucursalesRolCliente',autenticacionToken.Auth , SucursalesCont
 /* VER TODAS LAS SUCURSALES */
 api.get('/obtenerSucursalesTodas',autenticacionToken.Auth , SucursalesController.obtenerSucursalesTodas);
 
+/* VER SUCURSAL CAJERO REGISTRADO*/
+api.get('/verSucursalCajeroRegistrado',autenticacionToken.Auth , SucursalesController.verSucursalCajeroRegistrado);
+
+/* VER SUCURSAL REPARTIDOR REGISTRADO */
+api.get('/verSucursalRepartidorRegistrado',autenticacionToken.Auth , SucursalesController.verSucursalRepartidorRegistrado);
+
+/* VER SUCURSAL FACTURADOR REGISTRADO */
+api.get('/verSucursalFacturadorRegistrado',autenticacionToken.Auth , SucursalesController.verSucursalFacturadorRegistrado);
+
 
 module.exports= api;

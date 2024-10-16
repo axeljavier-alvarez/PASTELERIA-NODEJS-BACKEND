@@ -192,9 +192,9 @@ function GenerarFactura(req,res){
         }
     
         // Verificar que se reciban los datos de la tarjeta
-        const { numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad, tipoTarjeta } = parametros;
+        const { numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad } = parametros;
     
-        if (!numeroTarjeta || !nombreUsuario || !mesExpiracion || !yearExpiracion || !codigoSeguridad || !tipoTarjeta) {
+        if (!numeroTarjeta || !nombreUsuario || !mesExpiracion || !yearExpiracion || !codigoSeguridad) {
             return res.status(400).send({ mensaje: "Todos los campos de la tarjeta son requeridos." });
         }
     
@@ -236,7 +236,7 @@ function GenerarFactura(req,res){
                 if (!productosValidos) return; // Si hubo un problema, no continuamos
     
                 // Verificar la tarjeta
-                Tarjetas.findOne({ numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad, tipoTarjeta }, (err, tarjetaEncontrada) => {
+                Tarjetas.findOne({ numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad }, (err, tarjetaEncontrada) => {
                     if (err) {
                         console.error("Error al verificar la tarjeta:", err);
                         return res.status(500).send({ mensaje: "Error al verificar la tarjeta" });

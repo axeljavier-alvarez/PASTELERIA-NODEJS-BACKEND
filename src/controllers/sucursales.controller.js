@@ -355,6 +355,53 @@ function ObtenerSucursalesRolCliente(req, res) {
 
 
 
+function verSucursalCajeroRegistrado(req, res) {
+
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    Sucursales.find({ gestorSucursales: { $elemMatch: { idUsuario: req.user.sub } } }, (err, sucursalesEncontradas) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!sucursalesEncontradas || sucursalesEncontradas.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron sucursales para este gestor." });
+        }
+        return res.status(200).send({ sucursales: sucursalesEncontradas });
+    });
+}
+
+function verSucursalRepartidorRegistrado(req, res) {
+
+    if (req.user.rol !== 'ROL_REPARTIDOR') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_REPARTIDOR puede realizar esta acción." });
+    }
+
+    Sucursales.find({ gestorSucursales: { $elemMatch: { idUsuario: req.user.sub } } }, (err, sucursalesEncontradas) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!sucursalesEncontradas || sucursalesEncontradas.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron sucursales para este gestor." });
+        }
+        return res.status(200).send({ sucursales: sucursalesEncontradas });
+    });
+}
+
+
+function verSucursalFacturadorRegistrado(req, res) {
+
+    if (req.user.rol !== 'ROL_FACTURADOR') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_FACTURADOR puede realizar esta acción." });
+    }
+
+    Sucursales.find({ gestorSucursales: { $elemMatch: { idUsuario: req.user.sub } } }, (err, sucursalesEncontradas) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!sucursalesEncontradas || sucursalesEncontradas.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron sucursales para este gestor." });
+        }
+        return res.status(200).send({ sucursales: sucursalesEncontradas });
+    });
+}
+
+
 module.exports = {
     AgregarSucursal,
     obtenerSucursalesporIdGestor,
@@ -368,6 +415,9 @@ module.exports = {
     verSucursalesPorGestorRegistrado,
     ObtenerSucursalesRolCliente,
     obtenerSucursalesTodas,
-    ObtenerSucursalesInicio
+    ObtenerSucursalesInicio,
+    verSucursalCajeroRegistrado,
+    verSucursalRepartidorRegistrado,
+    verSucursalFacturadorRegistrado
 }
 

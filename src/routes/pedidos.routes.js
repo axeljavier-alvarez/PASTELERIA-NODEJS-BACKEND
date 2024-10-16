@@ -21,6 +21,9 @@ api.get('/verPedidosClienteRegistrado', autenticacionToken.Auth, PedidosControll
 
 api.put('/asignarPedidoRepartidor/:idRepartidor', autenticacionToken.Auth, PedidosController.asignarPedidoRepartidor);
 
+/* ver pedidos por sucursal */
+api.get('/verPedidosPorSucursal/:ID', autenticacionToken.Auth, PedidosController.obtenerPedidosPorIdSucursal);
 
+api.get('/pedidoClienteEnEspera', autenticacionToken.Auth, PedidosController.pedidoClienteEnEspera);
 
 module.exports= api;

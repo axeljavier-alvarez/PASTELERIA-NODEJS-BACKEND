@@ -258,6 +258,51 @@ function asignarPedidoRepartidor(req, res) {
     });
 }
 
+
+/* obtener pedidos por id sucursal, el cajero los vera en base a su sucursal jajaj */
+
+function obtenerPedidosPorIdSucursal(req, res) {
+
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_CAJERO puede realizar esta acción" });
+    }
+
+    const idSucursal = req.params.ID; // ID de la categoría desde la ruta
+
+    // Validar que se reciba el ID de la categoría
+    if (!idSucursal) {
+        return res.status(400).send({ mensaje: 'Falta el ID de la sucursal.' });
+    }
+
+    // Buscar los productos por ID de categoría en el array descripcionCategoria
+    Pedidos.find({ 'compras.datosSucursal.idSucursal': idSucursal }, (err, pedidoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar los pedidos.' });
+        if (!pedidoEncontrado || pedidoEncontrado.length === 0) {
+            return res.status(404).send({ mensaje: 'No se encontraron pedidos para la sucursal proporcionada.' });
+        }
+
+        return res.status(200).send({ pedidos: pedidoEncontrado });
+    });
+}
+
+/* obtener pedido de usuario y solo en espera */
+function pedidoClienteEnEspera(req, res) {
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
+    }
+
+    Pedidos.find({
+        datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
+        estadoPedido: "En espera"  // Agregar el filtro para el estado del pedido
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos en espera para este cliente." });
+        }
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
+
 module.exports = {
 
     generarPedido,
@@ -265,5 +310,7 @@ module.exports = {
     eliminarPedido,
     ObtenerTodosLosPedidos,
     verPedidosClienteRegistrado,
-    asignarPedidoRepartidor
+    asignarPedidoRepartidor,
+    obtenerPedidosPorIdSucursal,
+    pedidoClienteEnEspera
 }

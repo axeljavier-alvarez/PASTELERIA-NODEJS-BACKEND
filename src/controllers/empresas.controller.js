@@ -3,6 +3,23 @@ const jwt = require('../services/jwt');
 const Empresas = require('../models/empresas.model');
 const empresasModel = require('../models/empresas.model');
 
+/* VER DATOS DE EMPRESA EN LA PAGINA DE INICIO */
+
+function ObtenerEmpresaInicio (req, res) {
+
+    Empresas.find((err, empresasEncontradas) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ empresas: empresasEncontradas })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */ 
+    })
+}
+
+
 function agregarEmpresaRolAdmin(req, res) {
     if (req.user.rol !== 'ROL_ADMIN') {
         return res.status(500).send({ mensaje: "Unicamente el ROL_ADMIN puede realizar esta acción" });
@@ -202,6 +219,7 @@ module.exports ={
     editarEmpresaRolGestor,
     eliminarEmpresaRolGestor,
     getEmpresaRolGestor,
-    getEmpresaIdRolGestor
+    getEmpresaIdRolGestor,
+    ObtenerEmpresaInicio
 
 }

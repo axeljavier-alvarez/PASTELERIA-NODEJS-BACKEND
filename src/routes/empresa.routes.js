@@ -19,5 +19,7 @@ api.delete('/eliminarEmpresaRolGestor/:ID', autenticacionToken.Auth , EmpresaCon
 api.get('/getEmpresaRolGestor', autenticacionToken.Auth , EmpresaController.getEmpresaRolGestor);
 api.get('/getEmpresaIdRolGestor/:ID', autenticacionToken.Auth, EmpresaController.getEmpresaIdRolGestor);
 
+api.get('/ObtenerEmpresaInicio', EmpresaController.ObtenerEmpresaInicio);
+
 
 module.exports= api;
