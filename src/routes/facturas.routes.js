@@ -9,5 +9,6 @@ const api = express.Router();
 // CREAR FUNCION
 api.post('/crearFacturaCliente', autenticacionToken.Auth, FacturaController.CrearFacturaCliente);
 
+api.get('/verFacturaPorPedido/:idPedido', autenticacionToken.Auth, FacturaController.verFacturaPorPedido);
 
 module.exports= api;

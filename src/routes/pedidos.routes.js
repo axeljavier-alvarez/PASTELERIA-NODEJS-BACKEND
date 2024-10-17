@@ -26,4 +26,7 @@ api.get('/verPedidosPorSucursal/:ID', autenticacionToken.Auth, PedidosController
 
 api.get('/pedidoClienteEnEspera', autenticacionToken.Auth, PedidosController.pedidoClienteEnEspera);
 
+
+api.get('/pedidoEnEsperaCredito/:idSucursal', autenticacionToken.Auth, PedidosController.pedidoEnEsperaCredito);
+
 module.exports= api;

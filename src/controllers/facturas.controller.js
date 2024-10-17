@@ -8,6 +8,21 @@ const Pedidos = require('../models/pedidos.model');
 const Tarjetas = require('../models/tarjetas.model');
 
 // const GenerarPDF = require('../generarPDF/generarPDF');
+function verFacturaPorPedido(req, res) {
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_CLIENTE puede realizar esta acción " });
+    }
+
+    const idPedido = req.params.idPedido; 
+
+    Facturas.find({
+        "datosPedido.idPedido": idPedido, 
+    }, (err, facturasEncontradas) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ facturas: facturasEncontradas });
+    });
+}
 
 function GenerarFactura(req,res){
     var parametros = req.body;
@@ -199,7 +214,7 @@ function GenerarFactura(req,res){
         }
     
         // Buscar el pedido del usuario
-        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estado: 'En espera' }, (err, pedidoEncontrado) => {
+        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'En espera' }, (err, pedidoEncontrado) => {
             if (err) return res.status(500).send({ mensaje: "Error en la petición" });
             if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos en espera para generar una factura" });
     
@@ -306,7 +321,7 @@ function GenerarFactura(req,res){
                                         // Cambiar el estado del pedido a "pagado"
                                         Pedidos.updateOne(
                                             { _id: pedidoEncontrado._id },
-                                            { estado: 'Pagado' },
+                                            { estadoPedido: 'En proceso' },
                                             (err) => {
                                                 if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
     
@@ -328,7 +343,8 @@ function GenerarFactura(req,res){
 
 module.exports={
     GenerarFactura,
-    CrearFacturaCliente
+    CrearFacturaCliente,
+    verFacturaPorPedido
 }
 
 

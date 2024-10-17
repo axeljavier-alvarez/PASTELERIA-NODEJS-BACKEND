@@ -22,7 +22,23 @@ function ObtenerTodosLosPedidos (req, res) {
     })
 }
 
+function pedidoEnEsperaCredito(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
 
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "En espera",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+        tipoPago: "Tarjeta de crédito" // Filtrar por tipo de pago
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
 
 
 /* OBTENER PEDIDO DE CLIENTE REGISTRADO */
@@ -49,7 +65,7 @@ function generarPedido(req, res) {
     }
     
     const idCarrito = req.params.idCarrito; 
-    const { tipoPago, direccionEnvio, municipioPedido } = req.body; 
+    const { tipoPago, direccionEnvio, municipioPedido, horaEntrega } = req.body; 
 
     // Buscar el carrito del usuario
     Carritos.findById(idCarrito, (err, carritoEncontrado) => {
@@ -91,7 +107,7 @@ function generarPedido(req, res) {
                 tipoPago: tipoPago,
                 estadoPedido: 'En espera',
                 direccionEnvio: direccionEnvio,
-                horaEntrega: null,
+                horaEntrega: horaEntrega,
                 metodoEnvio: metodoEnvio,
                 descuentos: null,
                 numeroDeOrden: 0,
@@ -312,5 +328,6 @@ module.exports = {
     verPedidosClienteRegistrado,
     asignarPedidoRepartidor,
     obtenerPedidosPorIdSucursal,
-    pedidoClienteEnEspera
+    pedidoClienteEnEspera,
+    pedidoEnEsperaCredito
 }
