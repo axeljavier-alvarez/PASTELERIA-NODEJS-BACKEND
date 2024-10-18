@@ -118,10 +118,14 @@ function generarPedido(req, res) {
                     metodoEnvio: metodoEnvio,
                     descuentos: null,
                     numeroDeOrden: 0,
-                    pagoConfirmado: null,
+                    pagoConfirmado: 'sin confirmar',
                     incrementoEnvio: incrementoEnvio,
                     departamentoPedido: departamento,
                     municipioPedido: municipioPedido,
+                    /* nuevos campos */
+                    estadoOrden: "no asignado",
+                    estadoRepartidorAsignado: "no asignado",
+
                     datosUsuario: [{
                         idUsuario: usuario._id,
                         nombre: usuario.nombre, 

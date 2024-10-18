@@ -19,6 +19,9 @@ var PedidosSchema = Schema({
     departamentoPedido: String,
     municipioPedido: String,
     
+    estadoOrden:String,
+    estadoRepartidorAsignado: String,
+    
     /* HACE REFERENCIA A USUARIOS */
     datosUsuario: [{
         idUsuario: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
