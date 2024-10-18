@@ -63,7 +63,7 @@ function generarPedido(req, res) {
     if (req.user.rol !== 'ROL_CLIENTE') {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
-    
+
     const idCarrito = req.params.idCarrito; 
     const { tipoPago, direccionEnvio, municipioPedido, horaEntrega } = req.body; 
 
@@ -81,84 +81,97 @@ function generarPedido(req, res) {
             return res.status(400).send({ mensaje: 'El total del carrito debe ser igual o mayor a 100.' });
         }
 
-        // Obtener datos del usuario
-        Usuarios.findById(req.user.sub, (err, usuario) => {
-            if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
-            if (!usuario) return res.status(404).send({ mensaje: "Usuario no encontrado" });
-
-            // Ajustar el total y el incremento de envío si el método de envío es "moto"
-            let totalPedido = carritoEncontrado.total;
-            const metodoEnvio = "moto"; // Asignar el método de envío
-            let incrementoEnvio = 0; // Inicializar el incremento de envío
-            
-            if (metodoEnvio === "moto") {
-                incrementoEnvio = 10; // Asignar incremento de envío de 10
-                totalPedido += incrementoEnvio; // Incrementar el total
+        // Verificar si ya hay pedidos sin confirmar para el usuario
+        Pedidos.countDocuments({ idUsuario: req.user.sub, estadoPedido: 'sin confirmar' }, (err, count) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al contar los pedidos' });
+            if (count > 0) {
+                return res.status(400).send({ mensaje: 'No puedes generar un nuevo pedido mientras haya pedidos sin confirmar.' });
             }
 
-            // Extraer el departamento del primer elemento de datosSucursal
-            const departamento = carritoEncontrado.compras[0]?.datosSucursal[0]?.departamento || null; // Asumir el primer dato
+            // Obtener datos del usuario
+            Usuarios.findById(req.user.sub, (err, usuario) => {
+                if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
+                if (!usuario) return res.status(404).send({ mensaje: "Usuario no encontrado" });
 
-            // Crear el nuevo pedido
-            const nuevoPedido = new Pedidos({
-                idUsuario: usuario._id, // Asignar el ID del usuario que generó el pedido
-                fecha: new Date(),
-                tiempoEstimado: '30-45 minutos',
-                tipoPago: tipoPago,
-                estadoPedido: 'En espera',
-                direccionEnvio: direccionEnvio,
-                horaEntrega: horaEntrega,
-                metodoEnvio: metodoEnvio,
-                descuentos: null,
-                numeroDeOrden: 0,
-                pagoConfirmado: null,
-                incrementoEnvio: incrementoEnvio,
-                departamentoPedido: departamento, // Llenar automáticamente el departamento
-                municipioPedido: municipioPedido, // Establecer municipioPedido como nulo
-                datosUsuario: [{
+                // Ajustar el total y el incremento de envío si el método de envío es "moto"
+                let totalPedido = carritoEncontrado.total;
+                const metodoEnvio = "moto"; // Asignar el método de envío
+                let incrementoEnvio = 0; // Inicializar el incremento de envío
+                
+                if (metodoEnvio === "moto") {
+                    incrementoEnvio = 10; // Asignar incremento de envío de 10
+                    totalPedido += incrementoEnvio; // Incrementar el total
+                }
+
+                // Extraer el departamento del primer elemento de datosSucursal
+                const departamento = carritoEncontrado.compras[0]?.datosSucursal[0]?.departamento || null; // Asumir el primer dato
+
+                // Crear el nuevo pedido
+                const nuevoPedido = new Pedidos({
                     idUsuario: usuario._id,
-                    nombre: usuario.nombre, 
-                    apellido: usuario.apellido,
-                    email: usuario.email,
-                    telefono: usuario.telefono 
-                }],
-                compras: carritoEncontrado.compras,
-                total: totalPedido
-            });
+                    fecha: new Date(),
+                    tiempoEstimado: '30-45 minutos',
+                    tipoPago: tipoPago,
+                    estadoPedido: 'sin confirmar',
+                    direccionEnvio: direccionEnvio,
+                    horaEntrega: horaEntrega,
+                    metodoEnvio: metodoEnvio,
+                    descuentos: null,
+                    numeroDeOrden: 0,
+                    pagoConfirmado: null,
+                    incrementoEnvio: incrementoEnvio,
+                    departamentoPedido: departamento,
+                    municipioPedido: municipioPedido,
+                    datosUsuario: [{
+                        idUsuario: usuario._id,
+                        nombre: usuario.nombre, 
+                        apellido: usuario.apellido,
+                        email: usuario.email,
+                        telefono: usuario.telefono 
+                    }],
+                    compras: carritoEncontrado.compras,
+                    total: totalPedido
+                });
 
-            // Generar el número de orden automáticamente
-            Pedidos.countDocuments({}, (err, count) => {
-                if (err) return res.status(500).send({ mensaje: 'Error al contar los pedidos' });
-                nuevoPedido.numeroDeOrden = count + 1;
+                // Generar el número de orden automáticamente
+                Pedidos.countDocuments({}, (err, count) => {
+                    if (err) return res.status(500).send({ mensaje: 'Error al contar los pedidos' });
+                    nuevoPedido.numeroDeOrden = count + 1;
 
-                nuevoPedido.save((err, pedidoGuardado) => {
-                    if (err) return res.status(500).send({ mensaje: 'Error al guardar el pedido' });
+                    nuevoPedido.save((err, pedidoGuardado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al guardar el pedido' });
 
-                    // Actualizar el stock de los productos
-                    const updatesStock = carritoEncontrado.compras.map(compra => {
-                        return Productos.findByIdAndUpdate(compra.idProducto, {
-                            $inc: { stock: -compra.cantidad }
+                        // Vaciar el carrito después de generar el pedido
+                        Carritos.findByIdAndUpdate(idCarrito, { compras: [], total: 0 }, { new: true }, (err, carritoActualizado) => {
+                            if (err) return res.status(500).send({ mensaje: 'Error al vaciar el carrito' });
+
+                            // Solo se actualizará el stock si el estado es "confirmado"
+                            if (nuevoPedido.estadoPedido === 'confirmado') {
+                                const updatesStock = pedidoGuardado.compras.map(compra => {
+                                    return Productos.findByIdAndUpdate(compra.idProducto, {
+                                        $inc: { stock: -compra.cantidad }
+                                    });
+                                });
+
+                                // Ejecutar todas las actualizaciones de stock
+                                Promise.all(updatesStock)
+                                    .then(() => {
+                                        return res.status(200).send({ mensaje: 'Pedido generado con éxito', pedido: pedidoGuardado, carrito: carritoActualizado });
+                                    })
+                                    .catch(err => {
+                                        return res.status(500).send({ mensaje: 'Error al actualizar el stock de los productos' });
+                                    });
+                            } else {
+                                return res.status(200).send({ mensaje: 'Pedido generado con éxito, pero el stock no se ha actualizado hasta que el pedido sea confirmado.', pedido: pedidoGuardado, carrito: carritoActualizado });
+                            }
                         });
                     });
-
-                    // Ejecutar todas las actualizaciones de stock
-                    Promise.all(updatesStock)
-                        .then(() => {
-                            // Vaciar el carrito después de generar el pedido
-                            Carritos.findByIdAndUpdate(idCarrito, { compras: [], total: 0 }, { new: true }, (err, carritoActualizado) => {
-                                if (err) return res.status(500).send({ mensaje: 'Error al vaciar el carrito' });
-
-                                return res.status(200).send({ mensaje: 'Pedido generado con éxito', pedido: pedidoGuardado, carrito: carritoActualizado });
-                            });
-                        })
-                        .catch(err => {
-                            return res.status(500).send({ mensaje: 'Error al actualizar el stock de los productos' });
-                        });
                 });
             });
         });
     });
 }
+
 
 /* VER LOS PEDIDOS DEL CLIENTE QUE LOS GENERO */
 function verPedidosCliente(req, res) {
@@ -309,7 +322,7 @@ function pedidoClienteEnEspera(req, res) {
 
     Pedidos.find({
         datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
-        estadoPedido: "En espera"  // Agregar el filtro para el estado del pedido
+        estadoPedido: "sin confirmar"  // Agregar el filtro para el estado del pedido
     }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!pedidosEncontrados || pedidosEncontrados.length === 0) {

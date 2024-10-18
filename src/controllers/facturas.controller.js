@@ -214,9 +214,9 @@ function GenerarFactura(req,res){
         }
     
         // Buscar el pedido del usuario
-        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'En espera' }, (err, pedidoEncontrado) => {
+        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'sin confirmar' }, (err, pedidoEncontrado) => {
             if (err) return res.status(500).send({ mensaje: "Error en la petición" });
-            if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos en espera para generar una factura" });
+            if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos sin confirmar para generar una factura" });
     
             if (!parametros.nit || parametros.nit === "") {
                 return res.status(500).send({ mensaje: "Debe llenar el campo nit para generar la factura" });
@@ -321,7 +321,7 @@ function GenerarFactura(req,res){
                                         // Cambiar el estado del pedido a "pagado"
                                         Pedidos.updateOne(
                                             { _id: pedidoEncontrado._id },
-                                            { estadoPedido: 'En proceso' },
+                                            { estadoPedido: 'confirmado' },
                                             (err) => {
                                                 if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
     

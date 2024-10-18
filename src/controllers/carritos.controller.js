@@ -318,7 +318,7 @@ function agregarCarritoPorIdProducto(req, res) {
             if (err || !productoEncontrado) return res.status(500).send({ mensaje: 'Error al buscar producto' });
 
             // Verifica la cantidad
-            const cantidad = Number(parametros.cantidad); // Asegúrate de convertir a número
+            const cantidad = Number(parametros.cantidad);
             if (cantidad <= 0) return res.status(500).send({ mensaje: 'La cantidad no puede ser menor o igual a cero' });
             if (cantidad > productoEncontrado.stock) return res.status(500).send({ mensaje: 'Cantidad excede el stock disponible' });
 
@@ -329,18 +329,11 @@ function agregarCarritoPorIdProducto(req, res) {
                 marca: productoEncontrado.marca,
                 imagen: productoEncontrado.imagen,
                 cantidad: cantidad,
-                size: productoEncontrado.size, // Agrega el tamaño del producto aquí
+                size: productoEncontrado.size,
                 precio: productoEncontrado.precio,
                 subTotal: cantidad * productoEncontrado.precio,
-                descripcionCategoria: productoEncontrado.descripcionCategoria, // Agrega la categoría
-                datosSucursal: productoEncontrado.datosSucursal.map(sucursal => ({
-                    idSucursal: sucursal.idSucursal,
-                    nombreSucursal: sucursal.nombreSucursal,
-                    direccionSucursal: sucursal.direccionSucursal,
-                    telefonoSucursal: sucursal.telefonoSucursal,
-                    departamento: sucursal.departamento, // Asegúrate de que este campo exista
-                    municipio: sucursal.municipio // Asegúrate de que este campo exista
-                }))
+                descripcionCategoria: productoEncontrado.descripcionCategoria,
+                datosSucursal: productoEncontrado.datosSucursal
             };
 
             // Si no existe el carrito, crea uno nuevo
@@ -350,15 +343,15 @@ function agregarCarritoPorIdProducto(req, res) {
                 carritoModel.total = 0;
 
                 // Guarda un carrito para el usuario
-                carritoModel.save((err, carrritoUsuario) => {
+                carritoModel.save((err, carritoUsuario) => {
                     if (err) return res.status(500).send({ mensaje: 'Error en la petición' });
-                    if (!carrritoUsuario) return res.status(500).send({ mensaje: 'Error al agregar el carrito' });
+                    if (!carritoUsuario) return res.status(500).send({ mensaje: 'Error al agregar el carrito' });
 
                     // Agrega el producto al nuevo carrito
                     Carritos.findByIdAndUpdate(
-                        { _id: carrritoUsuario._id },
+                        { _id: carritoUsuario._id },
                         {
-                            total: (carrritoUsuario.total + compra.subTotal),
+                            total: (carritoUsuario.total + compra.subTotal),
                             $push: { compras: compra }
                         },
                         { new: true },
@@ -368,13 +361,41 @@ function agregarCarritoPorIdProducto(req, res) {
                         }
                     );
                 });
-            } else { // Este usuario posee un carrito
+            } else {
                 // Verifica si el producto ya está en el carrito
                 const productoEnCarrito = carritoUsuario.compras.find(item => item.idProducto.toString() === idProd);
+                
+                // Obtiene el nombre de la sucursal del primer producto en el carrito, si existe
+                const nombreSucursalCarrito = carritoUsuario.compras.length > 0 ? carritoUsuario.compras[0].datosSucursal[0].nombreSucursal : null;
 
-                if (productoEnCarrito) {
+                // Si no hay productos en el carrito, se puede agregar el nuevo producto sin problemas
+                if (!productoEnCarrito) {
+                    // Verifica si el nombre de la sucursal es diferente
+                    if (nombreSucursalCarrito && nombreSucursalCarrito !== productoEncontrado.datosSucursal[0].nombreSucursal) {
+                        return res.status(400).send({ mensaje: 'Todos los productos deben pertenecer a la misma sucursal.' });
+                    }
+
+                    // Agrega un nuevo producto al carrito
+                    Carritos.findByIdAndUpdate(
+                        carritoUsuario._id,
+                        {
+                            $push: { compras: compra },
+                            $inc: { total: compra.subTotal }
+                        },
+                        { new: true },
+                        (err, carritoActualizado) => {
+                            if (err) return res.status(500).send({ mensaje: "Error al agregar producto al carrito" });
+                            return res.status(200).send({ mensaje: "Producto agregado al carrito", carrito: carritoActualizado });
+                        }
+                    );
+                } else {
                     // Actualiza la cantidad del producto existente
                     var cantidadNueva = productoEnCarrito.cantidad + cantidad;
+
+                    // Verifica si el nombre de la sucursal es diferente
+                    if (nombreSucursalCarrito && nombreSucursalCarrito !== productoEncontrado.datosSucursal[0].nombreSucursal) {
+                        return res.status(400).send({ mensaje: 'Todos los productos deben pertenecer a la misma sucursal.' });
+                    }
 
                     if (cantidadNueva > productoEncontrado.stock) {
                         return res.status(500).send({ mensaje: 'La cantidad total excede el stock disponible' });
@@ -386,15 +407,8 @@ function agregarCarritoPorIdProducto(req, res) {
                             $set: {
                                 "compras.$.cantidad": cantidadNueva,
                                 "compras.$.subTotal": cantidadNueva * productoEncontrado.precio,
-                                "compras.$.size": productoEncontrado.size, // Actualiza el tamaño si es necesario
-                                "compras.$.datosSucursal": productoEncontrado.datosSucursal.map(sucursal => ({
-                                    idSucursal: sucursal.idSucursal,
-                                    nombreSucursal: sucursal.nombreSucursal,
-                                    direccionSucursal: sucursal.direccionSucursal,
-                                    telefonoSucursal: sucursal.telefonoSucursal,
-                                    departamento: sucursal.departamento, // Asegúrate de que este campo exista
-                                    municipio: sucursal.municipio // Asegúrate de que este campo exista
-                                })) // Actualiza los datos de sucursal
+                                "compras.$.size": productoEncontrado.size,
+                                "compras.$.datosSucursal": productoEncontrado.datosSucursal
                             },
                             $inc: { total: cantidad * productoEncontrado.precio }
                         },
@@ -404,27 +418,12 @@ function agregarCarritoPorIdProducto(req, res) {
                             return res.status(200).send({ mensaje: "Producto actualizado en el carrito", carrito: carritoActualizado });
                         }
                     );
-                } else {
-                    // Agrega un nuevo producto al carrito
-                    Carritos.findByIdAndUpdate(
-                        carritoUsuario._id,
-                        {
-                            $push: {
-                                compras: compra // Agrega el objeto de compra completo
-                            },
-                            $inc: { total: compra.subTotal }
-                        },
-                        { new: true },
-                        (err, carritoActualizado) => {
-                            if (err) return res.status(500).send({ mensaje: "Error al agregar producto al carrito" });
-                            return res.status(200).send({ mensaje: "Producto agregado al carrito", carrito: carritoActualizado });
-                        }
-                    );
                 }
             }
         });
     });
 }
+
 
 
 
