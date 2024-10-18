@@ -48,11 +48,34 @@ function verPedidosClienteRegistrado(req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
 
-    // Busca los carritos del usuario usando el idUsuario directamente
-    Pedidos.find({ idUsuario: req.user.sub }, (err, pedidosEncontrados) => {
+    // Busca los pedidos del usuario con estadoPedido confirmado
+    Pedidos.find({ 
+        idUsuario: req.user.sub, 
+        estadoPedido: 'confirmado' 
+    }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
-            return res.status(404).send({ mensaje: "No se encontraron pedidos para este cliente" });
+            return res.status(404).send({ mensaje: "No se encontraron pedidos confirmados para este cliente." });
+        }
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
+function verPedidosSinConfirmarCliente(req, res) {
+    // Verifica si el usuario está autenticado
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
+    }
+
+    // Busca los pedidos del usuario con estadoPedido confirmado
+    Pedidos.find({ 
+        idUsuario: req.user.sub, 
+        estadoPedido: 'sin confirmar' 
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos confirmados para este cliente." });
         }
         return res.status(200).send({ pedidos: pedidosEncontrados });
     });
@@ -99,7 +122,12 @@ function generarPedido(req, res) {
                 let incrementoEnvio = 0; // Inicializar el incremento de envío
                 
                 if (metodoEnvio === "moto") {
-                    incrementoEnvio = 10; // Asignar incremento de envío de 10
+                    // Cambiar el incremento de envío basado en el total del carrito
+                    if (totalPedido >= 400) {
+                        incrementoEnvio = 0; // Si el total es 400 o más, incremento de envío es 0
+                    } else {
+                        incrementoEnvio = 10; // Si el total es menor a 400, incremento de envío es 10
+                    }
                     totalPedido += incrementoEnvio; // Incrementar el total
                 }
 
@@ -175,7 +203,6 @@ function generarPedido(req, res) {
         });
     });
 }
-
 
 /* VER LOS PEDIDOS DEL CLIENTE QUE LOS GENERO */
 function verPedidosCliente(req, res) {
@@ -319,10 +346,12 @@ function obtenerPedidosPorIdSucursal(req, res) {
 }
 
 /* obtener pedido de usuario y solo en espera */
-function pedidoClienteEnEspera(req, res) {
+function pedidoClienteSinConfirmar(req, res) {
     if (req.user.rol !== 'ROL_CLIENTE') {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
+
+    
 
     Pedidos.find({
         datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
@@ -345,6 +374,7 @@ module.exports = {
     verPedidosClienteRegistrado,
     asignarPedidoRepartidor,
     obtenerPedidosPorIdSucursal,
-    pedidoClienteEnEspera,
-    pedidoEnEsperaCredito
+    pedidoClienteSinConfirmar,
+    pedidoEnEsperaCredito,
+    verPedidosSinConfirmarCliente
 }

@@ -24,9 +24,14 @@ api.put('/asignarPedidoRepartidor/:idRepartidor', autenticacionToken.Auth, Pedid
 /* ver pedidos por sucursal */
 api.get('/verPedidosPorSucursal/:ID', autenticacionToken.Auth, PedidosController.obtenerPedidosPorIdSucursal);
 
-api.get('/pedidoClienteEnEspera', autenticacionToken.Auth, PedidosController.pedidoClienteEnEspera);
+api.get('/pedidoClienteSinConfirmar', autenticacionToken.Auth, PedidosController.pedidoClienteSinConfirmar);
 
 
 api.get('/pedidoEnEsperaCredito/:idSucursal', autenticacionToken.Auth, PedidosController.pedidoEnEsperaCredito);
+
+
+api.get('/verPedidosSinConfirmarCliente', autenticacionToken.Auth, PedidosController.verPedidosSinConfirmarCliente);
+
+
 
 module.exports= api;
