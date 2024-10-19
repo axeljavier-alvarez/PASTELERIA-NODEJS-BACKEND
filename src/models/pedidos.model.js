@@ -5,6 +5,14 @@ var PedidosSchema = Schema({
     // agregado recientemente
     idUsuario: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
 
+    pagoEfectivo: [{
+        idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },
+        efectivoCliente: Number,
+        cambioCliente:Number,
+        totalPedido: Number,
+        nit: String,
+    }],
+    
     fecha: Date,
     tiempoEstimado: String,
     tipoPago: String ,

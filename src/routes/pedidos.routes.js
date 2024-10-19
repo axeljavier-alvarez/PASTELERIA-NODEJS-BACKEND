@@ -40,5 +40,12 @@ api.get('/getPedidoPorId/:ID', autenticacionToken.Auth, PedidosController.getPed
 /* editar pedido */
 api.put('/editarPedidosRolCajero/:ID', autenticacionToken.Auth, PedidosController.editarPedidosRolCajero);
 
+/* nuevas funciones para efectivo*/
+api.post('/confirmarPedidoEfectivo', autenticacionToken.Auth, PedidosController.confirmarPedidoEfectivo);
+
+api.get('/pedidoClienteEfectivoSinConfirmar', autenticacionToken.Auth, PedidosController.pedidoClienteEfectivoSinConfirmar);
+
+api.get('/verPedidosConfirmadosEfectivo', autenticacionToken.Auth, PedidosController.verPedidosConfirmadosEfectivo);
+
 
 module.exports= api;

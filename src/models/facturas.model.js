@@ -10,6 +10,8 @@ var FacturasSchema = Schema({
         apellido: String,
         email: String
     }],
+    
+
     datosPedido: [{
 
         idPedido: { type: Schema.Types.ObjectId, ref: 'Pedidos' },
@@ -20,6 +22,14 @@ var FacturasSchema = Schema({
         metodoEnvio: String,
         descuentos: Number,
         numeroDeOrden: Number,
+
+        pagoEfectivo: [{
+            idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },
+            efectivoCliente: Number,
+            cambioCliente:Number,
+            totalPedido: Number
+        }],
+        
     }],
     compras: [{
         idProducto: { type: Schema.Types.ObjectId, ref: 'Productos' },

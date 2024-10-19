@@ -2,6 +2,7 @@ const Pedidos = require('../models/pedidos.model');
 const Carritos = require('../models/carritos.model');
 const Usuarios = require('../models/usuarios.model');
 const Productos = require('../models/productos.model');
+const Efectivo = require('../models/efectivo.model');
 
 /* OBTENER TODOS LOS PEDIDOS */
 function ObtenerTodosLosPedidos (req, res) {
@@ -76,7 +77,8 @@ function verPedidosClienteRegistrado(req, res) {
     // Busca los pedidos del usuario con estadoPedido confirmado
     Pedidos.find({ 
         idUsuario: req.user.sub, 
-        estadoPedido: 'confirmado' 
+        estadoPedido: 'confirmado',
+        tipoPago: 'Tarjeta de crédito',
     }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
@@ -86,6 +88,25 @@ function verPedidosClienteRegistrado(req, res) {
     });
 }
 
+function verPedidosConfirmadosEfectivo(req, res) {
+    // Verifica si el usuario está autenticado
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
+    }
+
+    // Busca los pedidos del usuario con estadoPedido confirmado
+    Pedidos.find({ 
+        idUsuario: req.user.sub, 
+        estadoPedido: 'confirmado',
+        tipoPago: 'Efectivo',
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos confirmados para este cliente." });
+        }
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
 
 function verPedidosSinConfirmarCliente(req, res) {
     // Verifica si el usuario está autenticado
@@ -381,7 +402,9 @@ function pedidoClienteSinConfirmar(req, res) {
 
     Pedidos.find({
         datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
-        estadoPedido: "sin confirmar"  // Agregar el filtro para el estado del pedido
+        
+        tipoPago: "Tarjeta de crédito",
+        estadoPedido: "sin confirmar",  // Agregar el filtro para el estado del pedido
     }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
@@ -425,8 +448,73 @@ function getPedidoPorId(req, res) {
   }
 
 
+  function confirmarPedidoEfectivo(req, res) {
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_CLIENTE puede realizar esta acción" });
+    }
+    
+    const { efectivoCliente, nit } = req.body; // El efectivo y el NIT que ingresa el cliente
 
-/* ver pedido por id */
+    // Buscar un pedido con tipoPago "Efectivo" y estadoPedido "sin confirmar"
+    Pedidos.findOne({ tipoPago: 'Efectivo', estadoPedido: 'sin confirmar' }, (err, pedido) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar el pedido' });
+        if (!pedido) return res.status(404).send({ mensaje: 'No hay pedidos sin confirmar con pago en efectivo' });
+
+        // Validar que el efectivoCliente sea mayor o igual que el totalPedido
+        if (efectivoCliente < pedido.total) {
+            return res.status(400).send({ mensaje: 'El efectivo debe ser mayor o igual al total del pedido' });
+        }
+
+        // Calcular el cambio
+        const cambioCliente = efectivoCliente > pedido.total ? efectivoCliente - pedido.total : 0;
+
+        // Crear un nuevo registro en el array de pagoEfectivo
+        const nuevoPagoEfectivo = {
+            efectivoCliente,
+            cambioCliente,
+            totalPedido: pedido.total, // Autocompletar totalPedido
+            nit // Agregar el campo NIT
+        };
+
+        // Actualizar el pedido
+        pedido.pagoEfectivo.push(nuevoPagoEfectivo);
+        pedido.estadoPedido = 'confirmado';
+
+        // Asignar el número de orden
+        Pedidos.findOne().sort({ numeroDeOrden: -1 }).exec((err, ultimoPedido) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al obtener el último pedido' });
+            pedido.numeroDeOrden = ultimoPedido ? ultimoPedido.numeroDeOrden + 1 : 1;
+
+            // Guardar el pedido actualizado
+            pedido.save((err, pedidoActualizado) => {
+                if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido' });
+
+                return res.status(200).send({ mensaje: 'Pedido confirmado con éxito', pedido: pedidoActualizado });
+            });
+        });
+    });
+}
+
+function pedidoClienteEfectivoSinConfirmar(req, res) {
+    if (req.user.rol !== 'ROL_CLIENTE') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
+    }
+
+    Pedidos.find({
+        datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
+        
+        tipoPago: "Efectivo",
+        estadoPedido: "sin confirmar",  // Agregar el filtro para el estado del pedido
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos en espera para este cliente." });
+        }
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
 
 module.exports = {
 
@@ -442,5 +530,8 @@ module.exports = {
     verPedidosSinConfirmarCliente,
     pedidoConfirmadoCredito,
     editarPedidosRolCajero,
-    getPedidoPorId
+    getPedidoPorId,
+    confirmarPedidoEfectivo,
+    pedidoClienteEfectivoSinConfirmar,
+    verPedidosConfirmadosEfectivo
 }
