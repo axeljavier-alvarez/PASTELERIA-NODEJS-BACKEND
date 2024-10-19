@@ -30,7 +30,32 @@ function pedidoEnEsperaCredito(req, res) {
     const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
 
     Pedidos.find({
-        estadoPedido: "En espera",
+        estadoPedido: "sin confirmar",
+        tipoPago: "Tarjeta de crédito",
+        pagoConfirmado: "sin confirmar",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+        tipoPago: "Tarjeta de crédito" // Filtrar por tipo de pago
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
+
+
+function pedidoConfirmadoCredito(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "confirmado",
+        tipoPago: "Tarjeta de crédito",
+        pagoConfirmado: "pago confirmado",
         "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
         tipoPago: "Tarjeta de crédito" // Filtrar por tipo de pago
     }, (err, pedidosEncontrados) => {
@@ -145,15 +170,16 @@ function generarPedido(req, res) {
                     horaEntrega: horaEntrega,
                     metodoEnvio: metodoEnvio,
                     descuentos: null,
-                    numeroDeOrden: 0,
+                    numeroDeOrden: 0, // Mantener en 0
                     pagoConfirmado: 'sin confirmar',
                     incrementoEnvio: incrementoEnvio,
                     departamentoPedido: departamento,
                     municipioPedido: municipioPedido,
                     /* nuevos campos */
                     estadoOrden: "no asignado",
-                    estadoRepartidorAsignado: "no asignado",
 
+                    horaRepartidorAsignado: null,
+                    horaPedidoEntregado: null,
                     datosUsuario: [{
                         idUsuario: usuario._id,
                         nombre: usuario.nombre, 
@@ -165,38 +191,33 @@ function generarPedido(req, res) {
                     total: totalPedido
                 });
 
-                // Generar el número de orden automáticamente
-                Pedidos.countDocuments({}, (err, count) => {
-                    if (err) return res.status(500).send({ mensaje: 'Error al contar los pedidos' });
-                    nuevoPedido.numeroDeOrden = count + 1;
+                // Guardar el nuevo pedido directamente
+                nuevoPedido.save((err, pedidoGuardado) => {
+                    if (err) return res.status(500).send({ mensaje: 'Error al guardar el pedido' });
 
-                    nuevoPedido.save((err, pedidoGuardado) => {
-                        if (err) return res.status(500).send({ mensaje: 'Error al guardar el pedido' });
+                    // Vaciar el carrito después de generar el pedido
+                    Carritos.findByIdAndUpdate(idCarrito, { compras: [], total: 0 }, { new: true }, (err, carritoActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al vaciar el carrito' });
 
-                        // Vaciar el carrito después de generar el pedido
-                        Carritos.findByIdAndUpdate(idCarrito, { compras: [], total: 0 }, { new: true }, (err, carritoActualizado) => {
-                            if (err) return res.status(500).send({ mensaje: 'Error al vaciar el carrito' });
-
-                            // Solo se actualizará el stock si el estado es "confirmado"
-                            if (nuevoPedido.estadoPedido === 'confirmado') {
-                                const updatesStock = pedidoGuardado.compras.map(compra => {
-                                    return Productos.findByIdAndUpdate(compra.idProducto, {
-                                        $inc: { stock: -compra.cantidad }
-                                    });
+                        // Solo se actualizará el stock si el estado es "confirmado"
+                        if (nuevoPedido.estadoPedido === 'confirmado') {
+                            const updatesStock = pedidoGuardado.compras.map(compra => {
+                                return Productos.findByIdAndUpdate(compra.idProducto, {
+                                    $inc: { stock: -compra.cantidad }
                                 });
+                            });
 
-                                // Ejecutar todas las actualizaciones de stock
-                                Promise.all(updatesStock)
-                                    .then(() => {
-                                        return res.status(200).send({ mensaje: 'Pedido generado con éxito', pedido: pedidoGuardado, carrito: carritoActualizado });
-                                    })
-                                    .catch(err => {
-                                        return res.status(500).send({ mensaje: 'Error al actualizar el stock de los productos' });
-                                    });
-                            } else {
-                                return res.status(200).send({ mensaje: 'Pedido generado con éxito, pero el stock no se ha actualizado hasta que el pedido sea confirmado.', pedido: pedidoGuardado, carrito: carritoActualizado });
-                            }
-                        });
+                            // Ejecutar todas las actualizaciones de stock
+                            Promise.all(updatesStock)
+                                .then(() => {
+                                    return res.status(200).send({ mensaje: 'Pedido generado con éxito', pedido: pedidoGuardado, carrito: carritoActualizado });
+                                })
+                                .catch(err => {
+                                    return res.status(500).send({ mensaje: 'Error al actualizar el stock de los productos' });
+                                });
+                        } else {
+                            return res.status(200).send({ mensaje: 'Pedido generado con éxito, pero el stock no se ha actualizado hasta que el pedido sea confirmado.', pedido: pedidoGuardado, carrito: carritoActualizado });
+                        }
                     });
                 });
             });
@@ -263,12 +284,11 @@ function asignarPedidoRepartidor(req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
     }
 
-    const idRepartidor = req.params.idRepartidor;
-    const { numeroDeOrden } = req.body;
+    const { email, numeroDeOrden } = req.body;
 
-    // Verificar que el número de orden esté presente
-    if (!numeroDeOrden) {
-        return res.status(400).send({ mensaje: 'El número de orden es requerido.' });
+    // Verificar que el número de orden y el email del repartidor estén presentes
+    if (!numeroDeOrden || !email) {
+        return res.status(400).send({ mensaje: 'El número de orden y el email del repartidor son requeridos.' });
     }
 
     // Buscar el pedido por numeroDeOrden
@@ -276,19 +296,24 @@ function asignarPedidoRepartidor(req, res) {
         if (err) return res.status(500).send({ mensaje: 'Error al buscar el pedido.' });
         if (!pedidoEncontrado) return res.status(404).send({ mensaje: 'Pedido no encontrado.' });
 
-        // Buscar los datos del repartidor
-        Usuarios.findById(idRepartidor, (err, repartidor) => {
+        // Verificar el estado del pedido
+        if (pedidoEncontrado.estadoOrden !== 'preparando su pedido') {
+            return res.status(400).send({ mensaje: 'El pedido debe estar en estado "preparando su pedido" para asignar un repartidor.' });
+        }
+
+        // Verificar si ya hay un repartidor asignado al pedido
+        if (pedidoEncontrado.repartidorAsignado.length > 0) {
+            return res.status(400).send({ mensaje: 'Este pedido ya tiene un repartidor asignado.' });
+        }
+
+        // Buscar los datos del repartidor por email
+        Usuarios.findOne({ email: email }, (err, repartidor) => {
             if (err) return res.status(500).send({ mensaje: 'Error al buscar el repartidor.' });
             if (!repartidor) return res.status(404).send({ mensaje: 'Repartidor no encontrado.' });
 
             // Verificar el estado del repartidor
             if (repartidor.estadoRepartidor === 'ocupado') {
                 return res.status(400).send({ mensaje: 'El repartidor está ocupado y no puede ser asignado.' });
-            }
-
-            // Verificar si ya hay un repartidor asignado al pedido
-            if (pedidoEncontrado.repartidorAsignado.some(r => r.idRepartidor.toString() === idRepartidor)) {
-                return res.status(400).send({ mensaje: 'Este repartidor ya está asignado a este pedido.' });
             }
 
             // Llenar los datos del repartidor en el pedido
@@ -307,6 +332,10 @@ function asignarPedidoRepartidor(req, res) {
             repartidor.save((err) => {
                 if (err) return res.status(500).send({ mensaje: 'Error al actualizar el estado del repartidor.' });
 
+                // Actualizar el pedido
+                pedidoEncontrado.estadoOrden = 'en camino'; // Cambiar estadoOrden a en camino
+                pedidoEncontrado.horaRepartidorAsignado = new Date(); // Asignar hora actual
+
                 // Guardar los cambios en el pedido
                 pedidoEncontrado.save((err, pedidoActualizado) => {
                     if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
@@ -317,7 +346,6 @@ function asignarPedidoRepartidor(req, res) {
         });
     });
 }
-
 
 /* obtener pedidos por id sucursal, el cajero los vera en base a su sucursal jajaj */
 
@@ -351,8 +379,6 @@ function pedidoClienteSinConfirmar(req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
 
-    
-
     Pedidos.find({
         datosUsuario: { $elemMatch: { idUsuario: req.user.sub } },
         estadoPedido: "sin confirmar"  // Agregar el filtro para el estado del pedido
@@ -365,6 +391,43 @@ function pedidoClienteSinConfirmar(req, res) {
     });
 }
 
+/* editar el pedido */ 
+
+function editarPedidosRolCajero(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_CAJERO puede realizar esta acción" });
+    }
+
+    var parametros = req.body;
+    var idPedido = req.params.ID;
+
+    Pedidos.findByIdAndUpdate(idPedido, parametros, { new: true }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la peticion" });
+        if (!pedidosEncontrados) return res.status(500).send({ mensaje: "Error al editar el pedido" });
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    })
+}
+
+
+function getPedidoPorId(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Unicamente el ROL_CAJERO puede realizar esta acción" });
+    }
+  
+    // buscar por id
+    var IdPedido = req.params.ID;
+  
+    Pedidos.findById(IdPedido, (err, pedidoEncontrado) => {
+      if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+      if (!pedidoEncontrado) return res.status(500).send({ mensaje: "Error al ver el pedido" });
+      return res.status(200).send({ pedidos: pedidoEncontrado })
+    })
+  }
+
+
+
+/* ver pedido por id */
+
 module.exports = {
 
     generarPedido,
@@ -376,5 +439,8 @@ module.exports = {
     obtenerPedidosPorIdSucursal,
     pedidoClienteSinConfirmar,
     pedidoEnEsperaCredito,
-    verPedidosSinConfirmarCliente
+    verPedidosSinConfirmarCliente,
+    pedidoConfirmadoCredito,
+    editarPedidosRolCajero,
+    getPedidoPorId
 }

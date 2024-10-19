@@ -19,8 +19,10 @@ var PedidosSchema = Schema({
     departamentoPedido: String,
     municipioPedido: String,
     
+    /* campos necesarios para lleva control orden */
     estadoOrden:String,
-    estadoRepartidorAsignado: String,
+    horaRepartidorAsignado: Date,
+    horaPedidoEntregado: Date,
     
     /* HACE REFERENCIA A USUARIOS */
     datosUsuario: [{

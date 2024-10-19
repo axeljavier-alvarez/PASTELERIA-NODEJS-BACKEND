@@ -19,7 +19,7 @@ api.get('/verPedidosRolCajero', autenticacionToken.Auth, PedidosController.Obten
 api.get('/verPedidosClienteRegistrado', autenticacionToken.Auth, PedidosController.verPedidosClienteRegistrado);
 
 
-api.put('/asignarPedidoRepartidor/:idRepartidor', autenticacionToken.Auth, PedidosController.asignarPedidoRepartidor);
+api.post('/asignarPedidoRepartidor', autenticacionToken.Auth, PedidosController.asignarPedidoRepartidor);
 
 /* ver pedidos por sucursal */
 api.get('/verPedidosPorSucursal/:ID', autenticacionToken.Auth, PedidosController.obtenerPedidosPorIdSucursal);
@@ -32,6 +32,13 @@ api.get('/pedidoEnEsperaCredito/:idSucursal', autenticacionToken.Auth, PedidosCo
 
 api.get('/verPedidosSinConfirmarCliente', autenticacionToken.Auth, PedidosController.verPedidosSinConfirmarCliente);
 
+api.get('/pedidoConfirmadoCredito/:idSucursal', autenticacionToken.Auth, PedidosController.pedidoConfirmadoCredito);
+
+/* que el cajero edite el pedido */
+api.get('/getPedidoPorId/:ID', autenticacionToken.Auth, PedidosController.getPedidoPorId);
+
+/* editar pedido */
+api.put('/editarPedidosRolCajero/:ID', autenticacionToken.Auth, PedidosController.editarPedidosRolCajero);
 
 
 module.exports= api;

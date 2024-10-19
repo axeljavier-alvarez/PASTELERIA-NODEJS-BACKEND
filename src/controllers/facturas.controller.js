@@ -203,7 +203,7 @@ function GenerarFactura(req,res){
         const parametros = req.body;
     
         if (req.user.rol !== 'ROL_CLIENTE') {
-            return res.status(500).send({ mensaje: "Unicamente el ROL_CLIENTE puede realizar esta acción" });
+            return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción" });
         }
     
         // Verificar que se reciban los datos de la tarjeta
@@ -214,7 +214,7 @@ function GenerarFactura(req,res){
         }
     
         // Buscar el pedido del usuario
-        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'sin confirmar'}, (err, pedidoEncontrado) => {
+        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'sin confirmar' }, (err, pedidoEncontrado) => {
             if (err) return res.status(500).send({ mensaje: "Error en la petición" });
             if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos sin confirmar para generar una factura" });
     
@@ -274,67 +274,73 @@ function GenerarFactura(req,res){
                                 return res.status(500).send({ mensaje: "Error al actualizar el saldo de la tarjeta" });
                             }
     
-                            // Obtener datos del usuario
-                            Usuarios.findById(req.user.sub, (err, usuario) => {
-                                if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
-                                if (!usuario) return res.status(500).send({ mensaje: "Usuario no encontrado" });
-    
-                                // Crear una nueva factura
-                                const modelFactura = new Facturas();
-                                modelFactura.nit = parametros.nit;
-                                modelFactura.fecha = new Date();
-                                modelFactura.datosUsuario = [{
-                                    idUsuario: usuario._id,
-                                    nombre: usuario.nombre,
-                                    apellido: usuario.apellido,
-                                    email: usuario.email
-                                }];
+                            // Obtener el siguiente numeroDeOrden
+                            Pedidos.find({}, 'numeroDeOrden').sort({ numeroDeOrden: -1 }).limit(1).exec((err, pedidos) => {
+                                if (err) return res.status(500).send({ mensaje: "Error al obtener el número de orden" });
                                 
-                                
-                                // Agregar datos del pedido a la factura
-                                modelFactura.datosPedido = [{
-                                    idPedido: pedidoEncontrado._id,
-                                    fecha: pedidoEncontrado.fecha,
-                                    tipoPago: pedidoEncontrado.tipoPago,
-                                    direccionEnvio: pedidoEncontrado.direccionEnvio,
-                                    horaEntrega: pedidoEncontrado.horaEntrega,
-                                    metodoEnvio: pedidoEncontrado.metodoEnvio,
-                                    descuentos: pedidoEncontrado.descuentos,
-                                    numeroDeOrden: pedidoEncontrado.numeroDeOrden,
-                                }];
-                                modelFactura.compras = pedidoEncontrado.compras;
-                                modelFactura.total = pedidoEncontrado.total;
+                                const nuevoNumeroDeOrden = (pedidos.length > 0 ? pedidos[0].numeroDeOrden : 0) + 1;
     
-                                // Actualizar el stock de los productos y generar la factura
-                                const updatesStock = pedidoEncontrado.compras.map(compra => {
-                                    return Productos.findByIdAndUpdate(compra.idProducto, {
-                                        $inc: { stock: -compra.cantidad, vendido: compra.cantidad }
+                                // Obtener datos del usuario
+                                Usuarios.findById(req.user.sub, (err, usuario) => {
+                                    if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
+                                    if (!usuario) return res.status(500).send({ mensaje: "Usuario no encontrado" });
+    
+                                    // Crear una nueva factura
+                                    const modelFactura = new Facturas();
+                                    modelFactura.nit = parametros.nit;
+                                    modelFactura.fecha = new Date();
+                                    modelFactura.datosUsuario = [{
+                                        idUsuario: usuario._id,
+                                        nombre: usuario.nombre,
+                                        apellido: usuario.apellido,
+                                        email: usuario.email
+                                    }];
+    
+                                    // Agregar datos del pedido a la factura
+                                    modelFactura.datosPedido = [{
+                                        idPedido: pedidoEncontrado._id,
+                                        fecha: pedidoEncontrado.fecha,
+                                        tipoPago: pedidoEncontrado.tipoPago,
+                                        direccionEnvio: pedidoEncontrado.direccionEnvio,
+                                        horaEntrega: pedidoEncontrado.horaEntrega,
+                                        metodoEnvio: pedidoEncontrado.metodoEnvio,
+                                        descuentos: pedidoEncontrado.descuentos,
+                                        numeroDeOrden: nuevoNumeroDeOrden, // Usar el nuevo número de orden
+                                    }];
+                                    modelFactura.compras = pedidoEncontrado.compras;
+                                    modelFactura.total = pedidoEncontrado.total;
+    
+                                    // Actualizar el stock de los productos y generar la factura
+                                    const updatesStock = pedidoEncontrado.compras.map(compra => {
+                                        return Productos.findByIdAndUpdate(compra.idProducto, {
+                                            $inc: { stock: -compra.cantidad, vendido: compra.cantidad }
+                                        });
                                     });
-                                });
     
-                                Promise.all(updatesStock).then(() => {
-                                    // Guardar la factura
-                                    modelFactura.save((err, agregarFactura) => {
-                                        if (err) return res.status(500).send({ mensaje: "Error, no se puede guardar la factura" });
-                                        if (!agregarFactura) return res.status(500).send({ mensaje: "No se puede guardar la factura" });
+                                    Promise.all(updatesStock).then(() => {
+                                        // Guardar la factura
+                                        modelFactura.save((err, agregarFactura) => {
+                                            if (err) return res.status(500).send({ mensaje: "Error, no se puede guardar la factura" });
+                                            if (!agregarFactura) return res.status(500).send({ mensaje: "No se puede guardar la factura" });
     
-                                        // Cambiar el estado del pedido a "pagado"
-                                        Pedidos.updateOne(
-                                            { _id: pedidoEncontrado._id },
-                                            { 
-                                                estadoPedido: 'confirmado',
-                                                pagoConfirmado: 'pago confirmado' // Actualiza el campo aquí
-                                            },
-                                            
-                                            (err) => {
-                                                if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
+                                            // Cambiar el estado del pedido a "pagado"
+                                            Pedidos.updateOne(
+                                                { _id: pedidoEncontrado._id },
+                                                { 
+                                                    estadoPedido: 'confirmado',
+                                                    pagoConfirmado: 'pago confirmado',
+                                                    numeroDeOrden: nuevoNumeroDeOrden // Actualizar el numeroDeOrden en el pedido
+                                                },
+                                                (err) => {
+                                                    if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
     
-                                                return res.status(200).send({ factura: agregarFactura });
-                                            }
-                                        );
+                                                    return res.status(200).send({ factura: agregarFactura });
+                                                }
+                                            );
+                                        });
+                                    }).catch(err => {
+                                        return res.status(500).send({ mensaje: "Error al actualizar el stock de los productos" });
                                     });
-                                }).catch(err => {
-                                    return res.status(500).send({ mensaje: "Error al actualizar el stock de los productos" });
                                 });
                             });
                         }

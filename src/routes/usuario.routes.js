@@ -114,4 +114,13 @@ api.put('/editarPerfilRepartidor/:ID' , autenticacionToken.Auth, MulterImagen.si
 //BUSQUEDA
 
 api.post('/buscarUsuario', autenticacionToken.Auth, usuarioController.buscarUsuario);
+
+
+// get repartidores de la sucursal
+api.get('/getRepartidoresPorIdSucursal/:idSucursal', autenticacionToken.Auth, usuarioController.getRepartidoresPorIdSucursal);
+
+
+api.get('/getRepartidorId/:ID' , autenticacionToken.Auth ,usuarioController.getRepartidorId);
+
+
 module.exports= api;

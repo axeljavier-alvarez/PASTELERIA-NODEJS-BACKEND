@@ -1201,7 +1201,49 @@ function buscarUsuario(req, res) {
 }
 
 
+function getRepartidoresPorIdSucursal(req, res) {
 
+  if (req.user.rol !== "ROL_CAJERO") {
+    return res.status(403).send({ mensaje: "Solo el ROL_CAJERO tiene permisos" });
+  }
+
+  const idSucursal = req.params.idSucursal;
+
+  // Verificar que el idSucursal esté presente
+  if (!idSucursal) {
+      return res.status(400).send({ mensaje: 'El idSucursal es requerido.' });
+  }
+
+  // Buscar usuarios por idSucursal
+  Usuarios.find({ idSucursal: idSucursal, rol: 'ROL_REPARTIDOR' }, (err, usuarios) => {
+      if (err) {
+          return res.status(500).send({ mensaje: 'Error al buscar los usuarios.' });
+      }
+
+      if (!usuarios || usuarios.length === 0) {
+          return res.status(404).send({ mensaje: 'No se encontraron usuarios para esta sucursal.' });
+      }
+
+      return res.status(200).send({ usuarios });
+  });
+}
+
+
+
+function getRepartidorId(req, res) {
+
+  if (req.user.rol !== "ROL_CAJERO") {
+    return res.status(403).send({ mensaje: "Solo el ROL_CAJERO tiene permisos" });
+  }
+  
+  var idCajero = req.params.ID;
+
+  Usuarios.findById(idCajero, (err, usuariosEncontrados) => {
+    if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+    if (!usuariosEncontrados) return res.status(500).send({ mensaje: "Error al ver el Cajero" });
+    return res.status(200).send({ usuario: usuariosEncontrados })
+  })
+}
 
 /* AGREGAR ROL REPARTIDOR */
 /* Siempre mandar a llamar a las funciones aqui */
@@ -1257,8 +1299,9 @@ module.exports = {
   editarPerfilGestor,
   editarPerfilCajero,
   editarPerfilRepartidor,
-  buscarUsuario
-
+  buscarUsuario,
+  getRepartidoresPorIdSucursal,
+  getRepartidorId
 }
 
 
