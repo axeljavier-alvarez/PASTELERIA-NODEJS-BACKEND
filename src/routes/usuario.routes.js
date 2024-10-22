@@ -119,6 +119,9 @@ api.post('/buscarUsuario', autenticacionToken.Auth, usuarioController.buscarUsua
 // get repartidores de la sucursal
 api.get('/getRepartidoresPorIdSucursal/:idSucursal', autenticacionToken.Auth, usuarioController.getRepartidoresPorIdSucursal);
 
+api.get('/getRepartidoresOcupadosPorIdSucursal/:idSucursal', autenticacionToken.Auth, usuarioController.getRepartidoresOcupadosPorIdSucursal);
+
+
 
 api.get('/getRepartidorId/:ID' , autenticacionToken.Auth ,usuarioController.getRepartidorId);
 

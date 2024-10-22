@@ -24,22 +24,40 @@ function ObtenerTodosLosPedidos (req, res) {
 }
 
 function pedidoEnEsperaCredito(req, res) {
-    if (req.user.rol !== 'ROL_CAJERO') {
-        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
-    }
+    const idSucursal = req.params.idSucursal;
 
-    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
-
-    Pedidos.find({
-        estadoPedido: "sin confirmar",
-        tipoPago: "Tarjeta de crédito",
-        pagoConfirmado: "sin confirmar",
-        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
-        tipoPago: "Tarjeta de crédito" // Filtrar por tipo de pago
-    }, (err, pedidosEncontrados) => {
+    // Buscar créditos que tengan historialFacturasCredito con el tipo de pago "Tarjeta de crédito"
+    Credito.find({
+        'historialFacturasCredito.datosTarjeta.tipoTarjeta': 'Efectivo',
+        'historialFacturasCredito.datosUsuario': { $exists: true }
+    })
+    .populate('historialFacturasCredito.idFactura') // Asegúrate de usar populate si necesitas los datos de las facturas
+    .exec((err, creditosEncontrados) => {
         if (err) return res.send({ mensaje: "Error: " + err });
 
-        return res.send({ pedidos: pedidosEncontrados });
+        if (!creditosEncontrados.length) {
+            return res.send({ mensaje: "No se encontraron créditos." });
+        }
+
+        // Filtrar las facturas en el historial por idSucursal
+        const facturasCredito = creditosEncontrados.flatMap(credito => 
+            credito.historialFacturasCredito.filter(factura => 
+                factura.idFactura.datosSucursal.some(sucursal => sucursal.idSucursal === idSucursal)
+            )
+        );
+
+        // Calcular el total de crédito
+        const totalCredito = facturasCredito.reduce((total, factura) => {
+            return total + factura.total; // Sumar el total de cada factura
+        }, 0);
+
+        // Crear el objeto a enviar
+        const resultado = {
+            totalCredito: totalCredito,
+            pedidos: facturasCredito // Cambiamos 'facturas' por 'pedidos'
+        };
+
+        return res.status(200).send({ resultado }); // Enviar el objeto resultado
     });
 }
 
@@ -58,7 +76,6 @@ function pedidoConfirmadoCredito(req, res) {
         tipoPago: "Tarjeta de crédito",
         pagoConfirmado: "pago confirmado",
         "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
-        tipoPago: "Tarjeta de crédito" // Filtrar por tipo de pago
     }, (err, pedidosEncontrados) => {
         if (err) return res.send({ mensaje: "Error: " + err });
 
@@ -514,6 +531,67 @@ function pedidoClienteEfectivoSinConfirmar(req, res) {
     });
 }
 
+/* NUEVAS FUNCIONES */
+/* 1 . VER PEDIDOS SIN CONFIRMAR EFECTIVO DE MI SUCURSAL*/
+function verPedidosSinConfirmarEfectivo(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "sin confirmar",
+        tipoPago: "Efectivo",
+        pagoConfirmado: "sin confirmar",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
+/* 2. VER PEDIDOS SIN CONFIRMAR TARJETA DE CREDITO DE MI SUCURSAL*/
+function verPedidosSinConfirmarCredito(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "sin confirmar",
+        tipoPago: "Tarjeta de crédito",
+        pagoConfirmado: "sin confirmar",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
+function pedidoConfirmadoEfectivo(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "confirmado",
+        tipoPago: "Efectivo",
+        pagoConfirmado: "sin confirmar",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
 
 
 module.exports = {
@@ -533,5 +611,8 @@ module.exports = {
     getPedidoPorId,
     confirmarPedidoEfectivo,
     pedidoClienteEfectivoSinConfirmar,
-    verPedidosConfirmadosEfectivo
+    verPedidosConfirmadosEfectivo,
+    verPedidosSinConfirmarEfectivo,
+    verPedidosSinConfirmarCredito,
+    pedidoConfirmadoEfectivo
 }

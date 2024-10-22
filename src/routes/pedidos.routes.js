@@ -48,4 +48,12 @@ api.get('/pedidoClienteEfectivoSinConfirmar', autenticacionToken.Auth, PedidosCo
 api.get('/verPedidosConfirmadosEfectivo', autenticacionToken.Auth, PedidosController.verPedidosConfirmadosEfectivo);
 
 
+/* NUEVAS FUNCIONES */
+api.get('/verPedidosSinConfirmarEfectivo/:idSucursal', autenticacionToken.Auth, PedidosController.verPedidosSinConfirmarEfectivo);
+
+api.get('/verPedidosSinConfirmarCredito/:idSucursal', autenticacionToken.Auth, PedidosController.verPedidosSinConfirmarCredito);
+
+api.get('/pedidoConfirmadoEfectivo/:idSucursal', autenticacionToken.Auth, PedidosController.pedidoConfirmadoEfectivo);
+
+
 module.exports= api;

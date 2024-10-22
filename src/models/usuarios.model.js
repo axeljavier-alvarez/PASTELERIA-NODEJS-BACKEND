@@ -17,8 +17,7 @@ const UsuarioSchema = Schema({
 
     /* nuevo campo que se necesita para el repartidor */
     estadoRepartidor: String,
-    idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' } // Campo añadido
-
+    idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' }, // Campo añadido
 });
 
 module.exports = mongoose.model('Usuarios', UsuarioSchema);

@@ -52,6 +52,13 @@ var PedidosSchema = Schema({
         estadoRepartidor: String
     }],
 
+    datosCajero: [{
+        idCajero: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
+        nombre: String,
+        apellido: String,
+        email: String,
+    }],
+    
     compras: [{
         idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
         nombreProducto: String,
@@ -71,7 +78,8 @@ var PedidosSchema = Schema({
             telefonoSucursal: String,
             departamento: String,
             municipio: String
-        }] 
+        }],
+        
     }],
     total: Number
 

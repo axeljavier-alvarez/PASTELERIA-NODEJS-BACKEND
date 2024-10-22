@@ -5,6 +5,7 @@ const path = require('path'); // Asegúrate de importar 'path'
 
 const app = express();
 
+
 // Middleware CORS
 app.use(cors({
   origin: 'http://localhost:4200',

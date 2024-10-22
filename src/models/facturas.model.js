@@ -4,6 +4,7 @@ var Schema = mongoose.Schema;
 var FacturasSchema = Schema({
     nit: String,
     fecha: Date,
+    
     datosUsuario: [{
         idUsuario: { type: Schema.Types.ObjectId, ref: 'Usuarios' },
         nombre: String,
@@ -11,6 +12,11 @@ var FacturasSchema = Schema({
         email: String
     }],
     
+    datosTarjeta: [{
+        tipoTarjeta: String,
+        nombreUsuario: String,
+
+    }],
 
     datosPedido: [{
 
@@ -27,10 +33,12 @@ var FacturasSchema = Schema({
             idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },
             efectivoCliente: Number,
             cambioCliente:Number,
-            totalPedido: Number
+            totalPedido: Number,
+            nit: String
         }],
         
     }],
+
     compras: [{
         idProducto: { type: Schema.Types.ObjectId, ref: 'Productos' },
         nombreProducto: String,

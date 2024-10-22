@@ -1215,7 +1215,36 @@ function getRepartidoresPorIdSucursal(req, res) {
   }
 
   // Buscar usuarios por idSucursal
-  Usuarios.find({ idSucursal: idSucursal, rol: 'ROL_REPARTIDOR' }, (err, usuarios) => {
+  Usuarios.find({ idSucursal: idSucursal, rol: 'ROL_REPARTIDOR', estadoRepartidor: 'libre' }, (err, usuarios) => {
+      if (err) {
+          return res.status(500).send({ mensaje: 'Error al buscar los usuarios.' });
+      }
+
+      if (!usuarios || usuarios.length === 0) {
+          return res.status(404).send({ mensaje: 'No se encontraron usuarios para esta sucursal.' });
+      }
+
+      return res.status(200).send({ usuarios });
+  });
+}
+
+
+
+function getRepartidoresOcupadosPorIdSucursal(req, res) {
+
+  if (req.user.rol !== "ROL_CAJERO") {
+    return res.status(403).send({ mensaje: "Solo el ROL_CAJERO tiene permisos" });
+  }
+
+  const idSucursal = req.params.idSucursal;
+
+  // Verificar que el idSucursal esté presente
+  if (!idSucursal) {
+      return res.status(400).send({ mensaje: 'El idSucursal es requerido.' });
+  }
+
+  // Buscar usuarios por idSucursal
+  Usuarios.find({ idSucursal: idSucursal, rol: 'ROL_REPARTIDOR', estadoRepartidor: 'ocupado' }, (err, usuarios) => {
       if (err) {
           return res.status(500).send({ mensaje: 'Error al buscar los usuarios.' });
       }
@@ -1301,7 +1330,8 @@ module.exports = {
   editarPerfilRepartidor,
   buscarUsuario,
   getRepartidoresPorIdSucursal,
-  getRepartidorId
+  getRepartidorId,
+  getRepartidoresOcupadosPorIdSucursal
 }
 
 
