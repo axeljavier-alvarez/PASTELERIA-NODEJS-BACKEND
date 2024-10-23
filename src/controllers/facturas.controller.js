@@ -554,6 +554,11 @@ function generarFacturaPagoEfectivo(req, res) {
         if (err) return res.status(500).send({ mensaje: "Error en la petición" });
         if (!pedidoEncontrado) return res.status(404).send({ mensaje: "Pedido no encontrado" });
 
+        // Verificar si el estadoOrden es "preparando su pedido"
+        if (pedidoEncontrado.estadoOrden !== "preparando su pedido") {
+            return res.status(400).send({ mensaje: "La factura solo puede generarse si el estado del pedido es 'preparando su pedido'." });
+        }
+
         // Verificar si ya existe una factura para el pedido
         Facturas.findOne({ 'datosPedido.idPedido': pedidoEncontrado._id }, (err, facturaExistente) => {
             if (err) return res.status(500).send({ mensaje: "Error al verificar la factura" });
@@ -583,12 +588,14 @@ function generarFacturaPagoEfectivo(req, res) {
                 if (err) return res.status(500).send({ mensaje: "Error al buscar la caja" });
                 if (!cajaEncontrada) return res.status(404).send({ mensaje: "Caja no encontrada para la sucursal proporcionada." });
 
-                // Actualizar efectivoGeneral y totalEfectivoFactura
+                // Verificar que hay suficiente efectivo en la caja
                 if (cajaEncontrada.efectivoGeneral < vueltosCliente) {
                     return res.status(400).send({ mensaje: "No hay suficiente efectivo en la caja para dar el vuelto." });
                 }
 
+                // Actualizar efectivoGeneral y totalEfectivoFactura
                 cajaEncontrada.efectivoGeneral -= vueltosCliente; // Restar el vuelto del efectivo general
+                cajaEncontrada.totalEfectivoFactura = cajaEncontrada.efectivoGeneral; // Actualizar totalEfectivoFactura
 
                 // Agregar el pedido a historialPedidosEfectivo en Caja
                 cajaEncontrada.historialPedidosEfectivo.push({
@@ -603,7 +610,6 @@ function generarFacturaPagoEfectivo(req, res) {
                     estadoPedido: pedidoEncontrado.estadoPedido,
                     incrementoEnvio: pedidoEncontrado.incrementoEnvio,
                     pagoEfectivo: pedidoEncontrado.pagoEfectivo,
-                    datosCajero: pedidoEncontrado.datosCajero,
                 });
 
                 // Guardar los cambios en la caja
@@ -630,12 +636,13 @@ function generarFacturaPagoEfectivo(req, res) {
                         horaEntrega: pedidoEncontrado.horaEntrega,
                         metodoEnvio: pedidoEncontrado.metodoEnvio,
                         descuentos: pedidoEncontrado.descuentos,
-                        numeroDeOrden: pedidoEncontrado.numeroDeOrden
+                        numeroDeOrden: pedidoEncontrado.numeroDeOrden,
+                        pagoEfectivo: pedidoEncontrado.pagoEfectivo
                     }];
                     modelFactura.compras = pedidoEncontrado.compras;
                     modelFactura.total = pedidoEncontrado.total;
 
-                    // Agregar datos del cajero al pedido
+                    // Agregar datos del cajero a la factura
                     const datosCajero = {
                         idCajero: req.user.sub,
                         nombre: req.user.nombre,
@@ -643,8 +650,7 @@ function generarFacturaPagoEfectivo(req, res) {
                         email: req.user.email,
                     };
 
-                    // Agregar datos del cajero al pedido
-                    pedidoEncontrado.datosCajero.push(datosCajero);
+                    modelFactura.datosCajero.push(datosCajero); // Ahora se agrega a la factura
 
                     // Actualizar el stock de los productos
                     const updatesStock = pedidoEncontrado.compras.map(compra => {
@@ -654,6 +660,9 @@ function generarFacturaPagoEfectivo(req, res) {
                     });
 
                     Promise.all(updatesStock).then(() => {
+                        // Actualizar el campo pagoConfirmado y guardar el pedido
+                        pedidoEncontrado.pagoConfirmado = "factura generada y confirmar";
+
                         // Guardar los cambios en el pedido
                         pedidoEncontrado.save(err => {
                             if (err) return res.status(500).send({ mensaje: "Error al actualizar el pedido." });
@@ -675,6 +684,52 @@ function generarFacturaPagoEfectivo(req, res) {
 
 
 
+
+
+
+function ObtenerTodasCajas(req, res) {
+
+
+
+    Caja.find((err, cajaEncontrada) => {
+        if (err) return res.send({ mensaje: "Error: " + err })
+
+        return res.send({ caja: cajaEncontrada })
+        /* Esto retornara
+            {
+                productos: ["array con todos los productos"]
+            }
+        */
+    })
+}
+
+function obtenerFacturasPorIdSucursal(req, res) {
+   
+
+    const idSucursal = req.params.idSucursal; // ID de la sucursal desde la ruta
+
+    // Validar que se reciba el ID de la sucursal
+    if (!idSucursal) {
+        return res.status(400).send({ mensaje: 'Falta el ID de la sucursal.' });
+    }
+
+    // Buscar las facturas donde al menos una de las compras tiene el idSucursal proporcionado
+    // y donde el tipoPago en datosPedido es "Efectivo"
+    Facturas.find({
+        'compras.datosSucursal.idSucursal': idSucursal,
+        'datosPedido.tipoPago': 'Efectivo'
+    }, (err, facturasEncontradas) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar las facturas.' });
+        if (!facturasEncontradas || facturasEncontradas.length === 0) {
+            return res.status(404).send({ mensaje: 'No se encontraron facturas para la sucursal proporcionada.' });
+        }
+
+        return res.status(200).send({ facturas: facturasEncontradas });
+    });
+}
+
+
+
 module.exports = {
     GenerarFactura,
     CrearFacturaCliente,
@@ -685,7 +740,9 @@ module.exports = {
     editarCaja,
     eliminarCaja,
     getCajaPorId,
-    generarFacturaPagoEfectivo
+    generarFacturaPagoEfectivo,
+    ObtenerTodasCajas,
+    obtenerFacturasPorIdSucursal
 }
 
 

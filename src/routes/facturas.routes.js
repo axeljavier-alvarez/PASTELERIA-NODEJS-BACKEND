@@ -11,6 +11,10 @@ api.post('/crearFacturaCliente', autenticacionToken.Auth, FacturaController.Crea
 
 api.get('/verFacturaPorPedido/:idPedido', autenticacionToken.Auth, FacturaController.verFacturaPorPedido);
 
+api.get('/ObtenerTodasCajas', autenticacionToken.Auth, FacturaController.ObtenerTodasCajas);
+
+
+
 /* 1. VER HISTORIAL DE CREDITO POR ID SUCU */
 api.post('/verFacturaCredito/:idSucursal', autenticacionToken.Auth, FacturaController.verFacturaCredito);
 
@@ -32,5 +36,9 @@ api.get('/getCajaPorId/:idCaja', autenticacionToken.Auth, FacturaController.getC
 /* 7. crear factura para pago con efectivo cuando ya este confirmado, lo hace el cajero,
 cumplir con ciertos requisitos */
 api.post('/generarFacturaPagoEfectivo/:idPedido', autenticacionToken.Auth, FacturaController.generarFacturaPagoEfectivo);
+
+/* 8. ver factura por id sucursal para cajero y facturador solo de efectivo */
+
+api.get('/obtenerFacturasPorIdSucursal/:idSucursal', autenticacionToken.Auth, FacturaController.obtenerFacturasPorIdSucursal);
 
 module.exports= api;

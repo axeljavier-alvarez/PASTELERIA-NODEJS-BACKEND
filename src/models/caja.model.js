@@ -33,7 +33,6 @@ var CajaSchema = Schema({
         estadoOrden:String,
         horaRepartidorAsignado: Date,
         horaPedidoEntregado: Date,
-        estadoOrden:String,
 
         pagoEfectivo: [{
             idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },

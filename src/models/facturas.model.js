@@ -18,6 +18,14 @@ var FacturasSchema = Schema({
 
     }],
 
+    datosCajero: [{
+        idCajero: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
+        nombre: String,
+        apellido: String,
+        email: String,
+    }],
+    
+    
     datosPedido: [{
 
         idPedido: { type: Schema.Types.ObjectId, ref: 'Pedidos' },

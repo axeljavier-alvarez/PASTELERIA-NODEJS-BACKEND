@@ -344,6 +344,17 @@ function asignarPedidoRepartidor(req, res) {
             return res.status(400).send({ mensaje: 'Este pedido ya tiene un repartidor asignado.' });
         }
 
+        // Verificaciones adicionales según el tipo de pago
+        if (pedidoEncontrado.tipoPago === "Efectivo") {
+            if (pedidoEncontrado.pagoConfirmado !== "factura generada y confirmar") {
+                return res.status(400).send({ mensaje: 'El pedido debe tener la factura generada y confirmada.' });
+            }
+        } else if (pedidoEncontrado.tipoPago === "Tarjeta de crédito") {
+            if (pedidoEncontrado.estadoOrden !== "preparando su pedido") {
+                return res.status(400).send({ mensaje: 'El pedido debe estar en estado "preparando su pedido" para asignar un repartidor.' });
+            }
+        }
+
         // Buscar los datos del repartidor por email
         Usuarios.findOne({ email: email }, (err, repartidor) => {
             if (err) return res.status(500).send({ mensaje: 'Error al buscar el repartidor.' });
@@ -384,6 +395,7 @@ function asignarPedidoRepartidor(req, res) {
         });
     });
 }
+
 
 /* obtener pedidos por id sucursal, el cajero los vera en base a su sucursal jajaj */
 
@@ -583,7 +595,6 @@ function pedidoConfirmadoEfectivo(req, res) {
     Pedidos.find({
         estadoPedido: "confirmado",
         tipoPago: "Efectivo",
-        pagoConfirmado: "sin confirmar",
         "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
     }, (err, pedidosEncontrados) => {
         if (err) return res.send({ mensaje: "Error: " + err });
