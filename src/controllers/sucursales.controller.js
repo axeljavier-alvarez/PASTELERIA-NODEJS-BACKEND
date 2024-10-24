@@ -328,6 +328,7 @@ function verSucursalRolGestor(req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_GESTOR puede realizar esta acción." });
     }
 
+    
     Sucursales.find({ gestorSucursales: { $elemMatch: { idUsuario: req.user.sub } } }, (err, sucursalesEncontradas) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!sucursalesEncontradas || sucursalesEncontradas.length === 0) {

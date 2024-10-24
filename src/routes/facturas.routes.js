@@ -41,4 +41,9 @@ api.post('/generarFacturaPagoEfectivo/:idPedido', autenticacionToken.Auth, Factu
 
 api.get('/obtenerFacturasPorIdSucursal/:idSucursal', autenticacionToken.Auth, FacturaController.obtenerFacturasPorIdSucursal);
 
+/* 9. ver caja por usuario */
+
+api.get('/verCajaPorUsuario', autenticacionToken.Auth, FacturaController.verCajaPorUsuario);
+
+
 module.exports= api;

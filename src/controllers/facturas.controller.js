@@ -729,6 +729,35 @@ function obtenerFacturasPorIdSucursal(req, res) {
 }
 
 
+/* ver caja por usuario */
+
+function verCajaPorUsuario(req, res) {
+    
+
+    // Buscar las sucursales a las que el usuario tiene acceso
+    Sucursales.find({ gestorSucursales: { $elemMatch: { idUsuario: req.user.sub } } }, (err, sucursalesEncontradas) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la búsqueda de sucursales." });
+        if (!sucursalesEncontradas || sucursalesEncontradas.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron sucursales para este usuario." });
+        }
+
+        // Obtener los IDs de las sucursales encontradas
+        const idsSucursales = sucursalesEncontradas.map(sucursal => sucursal._id);
+
+        // Buscar las cajas correspondientes a las sucursales encontradas
+        Caja.find({ 'datosSucursal.idSucursal': { $in: idsSucursales } }, (err, cajasEncontradas) => {
+            if (err) return res.status(500).send({ mensaje: "Error en la búsqueda de cajas: " + err });
+            if (!cajasEncontradas || cajasEncontradas.length === 0) {
+                return res.status(404).send({ mensaje: "No se encontraron cajas para las sucursales." });
+            }
+
+            // Devolver las cajas encontradas
+            return res.status(200).send({ cajas: cajasEncontradas });
+        });
+    });
+}
+
+
 
 module.exports = {
     GenerarFactura,
@@ -742,7 +771,8 @@ module.exports = {
     getCajaPorId,
     generarFacturaPagoEfectivo,
     ObtenerTodasCajas,
-    obtenerFacturasPorIdSucursal
+    obtenerFacturasPorIdSucursal,
+    verCajaPorUsuario
 }
 
 
