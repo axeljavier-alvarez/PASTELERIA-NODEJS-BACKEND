@@ -55,4 +55,8 @@ api.get('/verProductosRolCliente/:idSucursal/:idCategoria', autenticacionToken.A
 
 api.get ('/obtenerProductosCualquiera', ProductosController.ObtenerProductosCualquiera);
 
+
+api.get('/productosInventario/:ID', autenticacionToken.Auth, ProductosController.productosInventario);
+
+
 module.exports= api;

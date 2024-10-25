@@ -623,7 +623,10 @@ function generarFacturaPagoEfectivo(req, res) {
                     numeroDeOrden: pedidoEncontrado.numeroDeOrden,
                     estadoPedido: pedidoEncontrado.estadoPedido,
                     incrementoEnvio: pedidoEncontrado.incrementoEnvio,
+                    estadoOrden: pedidoEncontrado.estadoOrden,
+                    total: pedidoEncontrado.total,
                     pagoEfectivo: pedidoEncontrado.pagoEfectivo,
+                    compras: pedidoEncontrado.compras // Agregando el array de compras
                 });
 
                 // Guardar los cambios en la caja
@@ -653,7 +656,7 @@ function generarFacturaPagoEfectivo(req, res) {
                         numeroDeOrden: pedidoEncontrado.numeroDeOrden,
                         pagoEfectivo: pedidoEncontrado.pagoEfectivo
                     }];
-                    modelFactura.compras = pedidoEncontrado.compras;
+                    modelFactura.compras = pedidoEncontrado.compras; // Asignar las compras
                     modelFactura.total = pedidoEncontrado.total;
 
                     // Agregar datos del cajero a la factura
@@ -695,7 +698,6 @@ function generarFacturaPagoEfectivo(req, res) {
         });
     });
 }
-
 
 
 function ObtenerTodasCajas(req, res) {

@@ -17,6 +17,7 @@ var CajaSchema = Schema({
         departamento: String,
         municipio: String
     }], 
+    
     historialPedidosEfectivo: [{
 
         idPedido: { type: Schema.Types.ObjectId, ref: 'Pedidos' },
@@ -33,6 +34,8 @@ var CajaSchema = Schema({
         horaRepartidorAsignado: Date,
         horaPedidoEntregado: Date,
 
+        total: Number,
+
         pagoEfectivo: [{
             idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },
             efectivoCliente: Number,
@@ -40,19 +43,31 @@ var CajaSchema = Schema({
             totalPedido: Number
         }],
 
-        repartidorAsignado: [{
-
-            idRepartidor: {type: Schema.Types.ObjectId, ref: 'Usuarios'},
-            nombre: String,
-            apellido: String,
-            email: String,
-            telefono: Number,
-            rol: String,
-            estadoRepartidor: String
+        compras: [{
+            idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
+            nombreProducto: String,
+            marca: String,
+            cantidad: Number,
+            size:String,
+            precio: Number,
+            subTotal: Number,
+            descripcionCategoria: [{
+                idCategoria: { type: Schema.Types.ObjectId, ref: 'Categorias' },
+                nombreCategoria: String,
+            }],
+            datosSucursal: [{
+                idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' },
+                nombreSucursal: String,
+                direccionSucursal: String,
+                telefonoSucursal: String,
+                departamento: String,
+                municipio: String
+            }],
+            
         }],
-
       
     }],
+
 
 
 
@@ -71,7 +86,7 @@ var CajaSchema = Schema({
         estadoOrden:String,
         horaRepartidorAsignado: Date,
         horaPedidoEntregado: Date,
-
+        total: Number,
         pagoEfectivo: [{
             idEfectivo: { type: Schema.Types.ObjectId, ref: 'Efectivo' },
             efectivoCliente: Number,
@@ -90,12 +105,35 @@ var CajaSchema = Schema({
             estadoRepartidor: String
         }],
 
+        compras: [{
+            idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
+            nombreProducto: String,
+            marca: String,
+            cantidad: Number,
+            size:String,
+            precio: Number,
+            subTotal: Number,
+            descripcionCategoria: [{
+                idCategoria: { type: Schema.Types.ObjectId, ref: 'Categorias' },
+                nombreCategoria: String,
+            }],
+            datosSucursal: [{
+                idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' },
+                nombreSucursal: String,
+                direccionSucursal: String,
+                telefonoSucursal: String,
+                departamento: String,
+                municipio: String
+            }],
+            
+        }],
+
       
     }],
 
 
     
-    historialPedidosEfectivo: [{
+    historialPedidosEntregadosEfectivo: [{
 
         idPedido: { type: Schema.Types.ObjectId, ref: 'Pedidos' },
         fecha: Date,
@@ -127,6 +165,30 @@ var CajaSchema = Schema({
             telefono: Number,
             rol: String,
             estadoRepartidor: String
+        }],
+
+
+        compras: [{
+            idProducto: {type:Schema.Types.ObjectId,ref:'Productos'},
+            nombreProducto: String,
+            marca: String,
+            cantidad: Number,
+            size:String,
+            precio: Number,
+            subTotal: Number,
+            descripcionCategoria: [{
+                idCategoria: { type: Schema.Types.ObjectId, ref: 'Categorias' },
+                nombreCategoria: String,
+            }],
+            datosSucursal: [{
+                idSucursal: { type: Schema.Types.ObjectId, ref: 'Sucursales' },
+                nombreSucursal: String,
+                direccionSucursal: String,
+                telefonoSucursal: String,
+                departamento: String,
+                municipio: String
+            }],
+            
         }],
 
       

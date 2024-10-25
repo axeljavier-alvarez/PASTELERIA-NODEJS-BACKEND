@@ -58,6 +58,17 @@ api.get('/pedidoConfirmadoEfectivo/:idSucursal', autenticacionToken.Auth, Pedido
 /* post */
 api.post('/confirmarPedidoCredito', autenticacionToken.Auth, PedidosController.confirmarPedidoCredito);
 
+/* get ver pedidos */
+
+api.get('/verPedidoUsuario/:idUsuario', autenticacionToken.Auth, PedidosController.verPedidoAsignado);
+
+/* post */
+
+api.post('/confirmarPedidoGeneradoEfectivo', autenticacionToken.Auth, PedidosController.confirmarPedidoGeneradoEfectivo);
+
+api.get('/pedidosEntregadosCredito/:idSucursal', autenticacionToken.Auth, PedidosController.pedidosEntregadosCredito);
+
+api.get('/pedidosEntregadosEfectivoGenerados/:idSucursal', autenticacionToken.Auth, PedidosController.pedidosEntregadosEfectivoGenerados);
 
 
 module.exports= api;

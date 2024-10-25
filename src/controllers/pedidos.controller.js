@@ -3,6 +3,7 @@ const Carritos = require('../models/carritos.model');
 const Usuarios = require('../models/usuarios.model');
 const Productos = require('../models/productos.model');
 const Caja = require('../models/caja.model');
+const Sucursales = require('../models/sucursales.model');
 
 /* OBTENER TODOS LOS PEDIDOS */
 function ObtenerTodosLosPedidos (req, res) {
@@ -644,9 +645,6 @@ function confirmarPedidoCredito(req, res) {
         // Limpiar el campo numeroDeOrden solo para este pedido
         pedidoEncontrado.numeroDeOrden = 0;
 
-        // Vaciar el array datosCajero
-        // pedidoEncontrado.datosCajero = [];
-
         // Actualizar la caja
         Caja.findOne({ 'datosSucursal.nombreSucursal': nombreSucursal }, (err, caja) => {
             if (err) return res.status(500).send({ mensaje: 'Error al buscar la caja.' });
@@ -668,8 +666,120 @@ function confirmarPedidoCredito(req, res) {
                 estadoOrden: pedidoEncontrado.estadoOrden,
                 horaRepartidorAsignado: pedidoEncontrado.horaRepartidorAsignado,
                 horaPedidoEntregado: pedidoEncontrado.horaPedidoEntregado,
+                total: pedidoEncontrado.total,
                 pagoEfectivo: pedidoEncontrado.pagoEfectivo,
                 repartidorAsignado: pedidoEncontrado.repartidorAsignado,
+                compras: pedidoEncontrado.compras
+            });
+
+            // Actualizar totalEfectivoFactura
+            caja.totalEfectivoFactura = caja.efectivoGeneral - (caja.vueltosCliente || 0) +
+                (caja.totalPedidosCredito || 0) +
+                (caja.totalPedidosEfectivo || 0);
+
+            // Guardar los cambios en la caja
+            caja.save((err) => {
+                if (err) return res.status(500).send({ mensaje: 'Error al actualizar la caja.' });
+
+                // Cambiar el estado del repartidor a "libre"
+                if (pedidoEncontrado.repartidorAsignado && pedidoEncontrado.repartidorAsignado.length > 0) {
+                    const repartidorId = pedidoEncontrado.repartidorAsignado[0].idRepartidor;
+
+                    Usuarios.findByIdAndUpdate(repartidorId, { estadoRepartidor: "libre" }, { new: true }, (err, repartidorActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al actualizar el estado del repartidor.' });
+
+                        // Limpiar el array de repartidorAsignado
+                        pedidoEncontrado.repartidorAsignado = [];
+
+                        // Guardar los cambios en el pedido
+                        pedidoEncontrado.save((err, pedidoActualizado) => {
+                            if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
+
+                            return res.status(200).send({ mensaje: 'Pedido confirmado y entregado con éxito.', pedido: pedidoActualizado });
+                        });
+                    });
+                } else {
+                    // No hay repartidor asignado, limpiar el array de repartidorAsignado
+                    pedidoEncontrado.repartidorAsignado = [];
+
+                    // Guardar los cambios en el pedido
+                    pedidoEncontrado.save((err, pedidoActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
+
+                        return res.status(200).send({ mensaje: 'Pedido confirmado y entregado con éxito.', pedido: pedidoActualizado });
+                    });
+                }
+            });
+        });
+    });
+}
+
+
+function confirmarPedidoGeneradoEfectivo(req, res) {
+    const { numeroDeOrden, nombreSucursal, totalPedidosEfectivo } = req.body;
+
+    // Verificar que el número de orden, el nombre de la sucursal y el total estén presentes
+    if (!numeroDeOrden || !nombreSucursal || totalPedidosEfectivo === undefined) {
+        return res.status(400).send({ mensaje: 'El número de orden, el nombre de la sucursal y el total son requeridos.' });
+    }
+
+    // Buscar el pedido por numeroDeOrden
+    Pedidos.findOne({ numeroDeOrden: numeroDeOrden }, (err, pedidoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar el pedido.' });
+        if (!pedidoEncontrado) return res.status(404).send({ mensaje: 'Pedido no encontrado.' });
+
+        // Verificar que el tipo de pago sea "Efectivo"
+        if (pedidoEncontrado.tipoPago !== "Efectivo") {
+            return res.status(400).send({ mensaje: 'El pedido debe ser de tipo "Efectivo".' });
+        }
+
+        // Verificar si el pedido ya fue confirmado o no está en camino
+        if (pedidoEncontrado.estadoOrden !== "en camino") {
+            return res.status(400).send({ mensaje: 'El pedido no se puede confirmar porque no está en camino o ya ha sido entregado.' });
+        }
+
+        // Cambiar estadoPedido y estadoOrden a "entregado"
+        pedidoEncontrado.estadoPedido = "entregado";
+        pedidoEncontrado.estadoOrden = "entregado";
+        pedidoEncontrado.horaPedidoEntregado = new Date();
+        pedidoEncontrado.numeroDeOrden = 0;
+
+        // Actualizar la caja
+        Caja.findOne({ 'datosSucursal.nombreSucursal': nombreSucursal }, (err, caja) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar la caja.' });
+            if (!caja) return res.status(404).send({ mensaje: 'Caja no encontrada para la sucursal especificada.' });
+
+            // Imprimir valores para depuración
+            console.log('totalPedidosEfectivo:', totalPedidosEfectivo);
+            console.log('total del pedido:', pedidoEncontrado.total);
+
+            // Verificar que el totalPedidosEfectivo ingresado coincida con el total del pedido
+            if (Math.abs(totalPedidosEfectivo - pedidoEncontrado.total) > 0.01) {
+                return res.status(400).send({ 
+                    mensaje: `El total de pedidos en efectivo no coincide con el total del pedido. Debe ingresar: ${pedidoEncontrado.total}.` 
+                });
+            }
+
+            // Asignar el totalPedidosEfectivo
+            caja.totalPedidosEfectivo = totalPedidosEfectivo;
+            caja.historialPedidosEntregadosEfectivo.push({
+                idPedido: pedidoEncontrado._id,
+                fecha: new Date(),
+                tipoPago: pedidoEncontrado.tipoPago,
+                direccionEnvio: pedidoEncontrado.direccionEnvio,
+                horaEntrega: pedidoEncontrado.horaEntrega,
+                metodoEnvio: pedidoEncontrado.metodoEnvio,
+                descuentos: pedidoEncontrado.descuentos,
+                numeroDeOrden: pedidoEncontrado.numeroDeOrden,
+                estadoPedido: pedidoEncontrado.estadoPedido,
+                incrementoEnvio: pedidoEncontrado.incrementoEnvio,
+                estadoOrden: pedidoEncontrado.estadoOrden,
+                horaRepartidorAsignado: pedidoEncontrado.horaRepartidorAsignado,
+                horaPedidoEntregado: pedidoEncontrado.horaPedidoEntregado,
+                total: pedidoEncontrado.total,
+                pagoEfectivo: pedidoEncontrado.pagoEfectivo,
+                repartidorAsignado: pedidoEncontrado.repartidorAsignado,
+                compras: pedidoEncontrado.compras
             });
 
             // Actualizar totalEfectivoFactura
@@ -688,6 +798,9 @@ function confirmarPedidoCredito(req, res) {
                     Usuarios.findByIdAndUpdate(repartidorId, { estadoRepartidor: "libre" }, { new: true }, (err, repartidorActualizado) => {
                         if (err) return res.status(500).send({ mensaje: 'Error al actualizar el estado del repartidor.' });
 
+                        // Limpiar el array de repartidorAsignado
+                        pedidoEncontrado.repartidorAsignado = [];
+
                         // Guardar los cambios en el pedido
                         pedidoEncontrado.save((err, pedidoActualizado) => {
                             if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
@@ -696,7 +809,10 @@ function confirmarPedidoCredito(req, res) {
                         });
                     });
                 } else {
-                    // No hay repartidor asignado, guardar el pedido
+                    // No hay repartidor asignado, limpiar el array de repartidorAsignado
+                    pedidoEncontrado.repartidorAsignado = [];
+
+                    // Guardar los cambios en el pedido
                     pedidoEncontrado.save((err, pedidoActualizado) => {
                         if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
 
@@ -707,6 +823,77 @@ function confirmarPedidoCredito(req, res) {
         });
     });
 }
+
+
+
+
+// ver pedidos del repartidor asignado
+
+function verPedidoAsignado(req, res) {
+    const idUsuario = req.params.idUsuario;
+
+    // Verificar que el idUsuario esté presente
+    if (!idUsuario) {
+        return res.status(400).send({ mensaje: "El ID de usuario es requerido." });
+    }
+
+    
+    // Buscar los pedidos en los que el usuario es un repartidor asignado,
+    // con tipoPago "Tarjeta de crédito" y estadoOrden "en camino"
+    Pedidos.find({
+        'repartidorAsignado.idRepartidor': idUsuario,
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+        if (pedidosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: "No se encontraron pedidos asignados para este usuario." });
+        }
+
+        // Devolver los pedidos encontrados
+        return res.status(200).send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
+
+function pedidosEntregadosCredito(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "entregado",
+        tipoPago: "Tarjeta de crédito",
+        pagoConfirmado: "pago confirmado",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
+
+
+function pedidosEntregadosEfectivoGenerados(req, res) {
+    if (req.user.rol !== 'ROL_CAJERO') {
+        return res.status(500).send({ mensaje: "Únicamente el ROL_CAJERO puede realizar esta acción." });
+    }
+
+    const idSucursal = req.params.idSucursal; // Obtener idSucursal desde los parámetros de la solicitud
+
+    Pedidos.find({
+        estadoPedido: "entregado",
+        tipoPago: "Efectivo",
+        "compras.datosSucursal.idSucursal": idSucursal, // Filtrar por idSucursal
+    }, (err, pedidosEncontrados) => {
+        if (err) return res.send({ mensaje: "Error: " + err });
+
+        return res.send({ pedidos: pedidosEncontrados });
+    });
+}
+
 
 module.exports = {
 
@@ -729,5 +916,9 @@ module.exports = {
     verPedidosSinConfirmarEfectivo,
     verPedidosSinConfirmarCredito,
     pedidoConfirmadoEfectivo,
-    confirmarPedidoCredito
+    confirmarPedidoCredito,
+    verPedidoAsignado,
+    confirmarPedidoGeneradoEfectivo,
+    pedidosEntregadosCredito,
+    pedidosEntregadosEfectivoGenerados
 }
