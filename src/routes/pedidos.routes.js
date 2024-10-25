@@ -55,5 +55,9 @@ api.get('/verPedidosSinConfirmarCredito/:idSucursal', autenticacionToken.Auth, P
 
 api.get('/pedidoConfirmadoEfectivo/:idSucursal', autenticacionToken.Auth, PedidosController.pedidoConfirmadoEfectivo);
 
+/* post */
+api.post('/confirmarPedidoCredito', autenticacionToken.Auth, PedidosController.confirmarPedidoCredito);
+
+
 
 module.exports= api;

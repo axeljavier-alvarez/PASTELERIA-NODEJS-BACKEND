@@ -202,163 +202,164 @@ function GenerarFactura(req, res) {
 
 
 
-
-function CrearFacturaCliente(req, res) {
-    const parametros = req.body;
-
-    if (req.user.rol !== 'ROL_CLIENTE') {
-        return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción" });
-    }
-
-    // Verificar que se reciban los datos de la tarjeta
-    const { numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad } = parametros;
-
-    if (!numeroTarjeta || !nombreUsuario || !mesExpiracion || !yearExpiracion || !codigoSeguridad) {
-        return res.status(400).send({ mensaje: "Todos los campos de la tarjeta son requeridos." });
-    }
-
-    // Buscar el pedido del usuario
-    Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'sin confirmar' }, (err, pedidoEncontrado) => {
-        if (err) return res.status(500).send({ mensaje: "Error en la petición" });
-        if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos sin confirmar para generar una factura" });
-
-        if (!parametros.nit || parametros.nit === "") {
-            return res.status(500).send({ mensaje: "Debe llenar el campo nit para generar la factura" });
+    function CrearFacturaCliente(req, res) {
+        const parametros = req.body;
+    
+        if (req.user.rol !== 'ROL_CLIENTE') {
+            return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción" });
         }
-
-        let productosValidos = true; // Variable para controlar si todos los productos son válidos
-        const updates = []; // Array para almacenar las promesas de actualización de stock
-
-        // Verificar stock de los productos
-        for (let i = 0; i < pedidoEncontrado.compras.length; i++) {
-            const productoId = pedidoEncontrado.compras[i].idProducto;
-            const cantidad = pedidoEncontrado.compras[i].cantidad;
-
-            // Verificar el stock del producto
-            const verificacion = Productos.findOne({ _id: productoId }).exec();
-            updates.push(verificacion); // Guardamos la promesa
-
-            verificacion.then(productoVerificacion => {
-                if (!productoVerificacion || cantidad > productoVerificacion.stock) {
-                    productosValidos = false; // Hay un problema con el stock
-                    res.status(500).send({
-                        factura: "PROCESO DE FACTURACIÓN ANULADO",
-                        advertencia: "Su pedido posee el producto " + pedidoEncontrado.compras[i].nombreProducto + " con una cantidad mayor al stock actual.",
-                        mensaje: "Debe editar la cantidad de su pedido o eliminar el producto de su compra para generar una nueva factura."
-                    });
-                }
-            });
+    
+        // Verificar que se reciban los datos de la tarjeta
+        const { numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad } = parametros;
+    
+        if (!numeroTarjeta || !nombreUsuario || !mesExpiracion || !yearExpiracion || !codigoSeguridad) {
+            return res.status(400).send({ mensaje: "Todos los campos de la tarjeta son requeridos." });
         }
-
-        // Cuando todas las verificaciones de stock se completen
-        Promise.all(updates).then(() => {
-            if (!productosValidos) return; // Si hubo un problema, no continuamos
-
-            // Verificar la tarjeta
-            Tarjetas.findOne({ numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad }, (err, tarjetaEncontrada) => {
-                if (err) {
-                    console.error("Error al verificar la tarjeta:", err);
-                    return res.status(500).send({ mensaje: "Error al verificar la tarjeta" });
-                }
-                if (!tarjetaEncontrada) return res.status(400).send({ mensaje: "La tarjeta no es válida o no existe." });
-
-                // Verificar saldo de la tarjeta
-                if (parseFloat(tarjetaEncontrada.saldo) < pedidoEncontrado.total) {
-                    return res.status(400).send({ mensaje: "Saldo insuficiente en la tarjeta." });
-                }
-
-                // Actualizar el saldo de la tarjeta
-                Tarjetas.findByIdAndUpdate(
-                    tarjetaEncontrada._id,
-                    { $inc: { saldo: -pedidoEncontrado.total } },
-                    { new: true },
-                    (err, tarjetaActualizada) => {
-                        if (err) {
-                            console.error("Error al actualizar el saldo de la tarjeta:", err);
-                            return res.status(500).send({ mensaje: "Error al actualizar el saldo de la tarjeta" });
-                        }
-
-                        // Obtener el siguiente numeroDeOrden
-                        Pedidos.find({}, 'numeroDeOrden').sort({ numeroDeOrden: -1 }).limit(1).exec((err, pedidos) => {
-                            if (err) return res.status(500).send({ mensaje: "Error al obtener el número de orden" });
-
-                            const nuevoNumeroDeOrden = (pedidos.length > 0 ? pedidos[0].numeroDeOrden : 0) + 1;
-
-                            // Obtener datos del usuario
-                            Usuarios.findById(req.user.sub, (err, usuario) => {
-                                if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
-                                if (!usuario) return res.status(500).send({ mensaje: "Usuario no encontrado" });
-
-                                // Crear una nueva factura
-                                const modelFactura = new Facturas();
-                                modelFactura.nit = parametros.nit;
-                                modelFactura.fecha = new Date();
-                                modelFactura.datosUsuario = [{
-                                    idUsuario: usuario._id,
-                                    nombre: usuario.nombre,
-                                    apellido: usuario.apellido,
-                                    email: usuario.email
-                                }];
-
-                                // Agregar datos de la tarjeta a la factura
-                                modelFactura.datosTarjeta = [{
-                                    tipoTarjeta: tarjetaEncontrada.tipoTarjeta, // Asegúrate de que el modelo de Tarjetas tenga este campo
-                                    nombreUsuario: tarjetaEncontrada.nombreUsuario // Asegúrate de que el modelo de Tarjetas tenga este campo
-                                }];
-
-                                // Agregar datos del pedido a la factura
-                                modelFactura.datosPedido = [{
-                                    idPedido: pedidoEncontrado._id,
-                                    fecha: pedidoEncontrado.fecha,
-                                    tipoPago: pedidoEncontrado.tipoPago,
-                                    direccionEnvio: pedidoEncontrado.direccionEnvio,
-                                    horaEntrega: pedidoEncontrado.horaEntrega,
-                                    metodoEnvio: pedidoEncontrado.metodoEnvio,
-                                    descuentos: pedidoEncontrado.descuentos,
-                                    numeroDeOrden: nuevoNumeroDeOrden, // Usar el nuevo número de orden
-                                }];
-                                modelFactura.compras = pedidoEncontrado.compras;
-                                modelFactura.total = pedidoEncontrado.total;
-
-                                // Actualizar el stock de los productos y generar la factura
-                                const updatesStock = pedidoEncontrado.compras.map(compra => {
-                                    return Productos.findByIdAndUpdate(compra.idProducto, {
-                                        $inc: { stock: -compra.cantidad, vendido: compra.cantidad }
-                                    });
-                                });
-
-                                Promise.all(updatesStock).then(() => {
-                                    // Guardar la factura
-                                    modelFactura.save((err, agregarFactura) => {
-                                        if (err) return res.status(500).send({ mensaje: "Error, no se puede guardar la factura" });
-                                        if (!agregarFactura) return res.status(500).send({ mensaje: "No se puede guardar la factura" });
-
-                                        // Cambiar el estado del pedido a "pagado"
-                                        Pedidos.updateOne(
-                                            { _id: pedidoEncontrado._id },
-                                            {
-                                                estadoPedido: 'confirmado',
-                                                pagoConfirmado: 'pago confirmado',
-                                                numeroDeOrden: nuevoNumeroDeOrden // Actualizar el numeroDeOrden en el pedido
-                                            },
-                                            (err) => {
-                                                if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
-
-                                                return res.status(200).send({ factura: agregarFactura });
-                                            }
-                                        );
-                                    });
-                                }).catch(err => {
-                                    return res.status(500).send({ mensaje: "Error al actualizar el stock de los productos" });
-                                });
-                            });
+    
+        // Buscar el pedido del usuario
+        Pedidos.findOne({ 'datosUsuario.idUsuario': req.user.sub, estadoPedido: 'sin confirmar' }, (err, pedidoEncontrado) => {
+            if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+            if (!pedidoEncontrado) return res.status(500).send({ mensaje: "No hay pedidos sin confirmar para generar una factura" });
+    
+            if (!parametros.nit || parametros.nit === "") {
+                return res.status(500).send({ mensaje: "Debe llenar el campo nit para generar la factura" });
+            }
+    
+            let productosValidos = true; // Variable para controlar si todos los productos son válidos
+            const updates = []; // Array para almacenar las promesas de actualización de stock
+    
+            // Verificar stock de los productos
+            for (let i = 0; i < pedidoEncontrado.compras.length; i++) {
+                const productoId = pedidoEncontrado.compras[i].idProducto;
+                const cantidad = pedidoEncontrado.compras[i].cantidad;
+    
+                // Verificar el stock del producto
+                const verificacion = Productos.findOne({ _id: productoId }).exec();
+                updates.push(verificacion); // Guardamos la promesa
+    
+                verificacion.then(productoVerificacion => {
+                    if (!productoVerificacion || cantidad > productoVerificacion.stock) {
+                        productosValidos = false; // Hay un problema con el stock
+                        res.status(500).send({
+                            factura: "PROCESO DE FACTURACIÓN ANULADO",
+                            advertencia: "Su pedido posee el producto " + pedidoEncontrado.compras[i].nombreProducto + " con una cantidad mayor al stock actual.",
+                            mensaje: "Debe editar la cantidad de su pedido o eliminar el producto de su compra para generar una nueva factura."
                         });
                     }
-                );
+                });
+            }
+    
+            // Cuando todas las verificaciones de stock se completen
+            Promise.all(updates).then(() => {
+                if (!productosValidos) return; // Si hubo un problema, no continuamos
+    
+                // Verificar la tarjeta
+                Tarjetas.findOne({ numeroTarjeta, nombreUsuario, mesExpiracion, yearExpiracion, codigoSeguridad }, (err, tarjetaEncontrada) => {
+                    if (err) {
+                        console.error("Error al verificar la tarjeta:", err);
+                        return res.status(500).send({ mensaje: "Error al verificar la tarjeta" });
+                    }
+                    if (!tarjetaEncontrada) return res.status(400).send({ mensaje: "La tarjeta no es válida o no existe." });
+    
+                    // Verificar saldo de la tarjeta
+                    if (parseFloat(tarjetaEncontrada.saldo) < pedidoEncontrado.total) {
+                        return res.status(400).send({ mensaje: "Saldo insuficiente en la tarjeta." });
+                    }
+    
+                    // Actualizar el saldo de la tarjeta
+                    Tarjetas.findByIdAndUpdate(
+                        tarjetaEncontrada._id,
+                        { $inc: { saldo: -pedidoEncontrado.total } },
+                        { new: true },
+                        (err, tarjetaActualizada) => {
+                            if (err) {
+                                console.error("Error al actualizar el saldo de la tarjeta:", err);
+                                return res.status(500).send({ mensaje: "Error al actualizar el saldo de la tarjeta" });
+                            }
+    
+                            // Obtener el siguiente numeroDeOrden
+                            Pedidos.find({}).sort({ numeroDeOrden: 1 }).exec((err, pedidos) => {
+                                if (err) return res.status(500).send({ mensaje: "Error al obtener el número de orden" });
+    
+                                const nuevoNumeroDeOrden = pedidos.length > 0 ? (pedidos[pedidos.length - 1].numeroDeOrden + 1) : 1;
+    
+                                // Obtener datos del usuario
+                                Usuarios.findById(req.user.sub, (err, usuario) => {
+                                    if (err) return res.status(500).send({ mensaje: "Error al obtener datos del usuario" });
+                                    if (!usuario) return res.status(500).send({ mensaje: "Usuario no encontrado" });
+    
+                                    // Crear una nueva factura
+                                    const modelFactura = new Facturas();
+                                    modelFactura.nit = parametros.nit;
+                                    modelFactura.fecha = new Date();
+                                    modelFactura.datosUsuario = [{
+                                        idUsuario: usuario._id,
+                                        nombre: usuario.nombre,
+                                        apellido: usuario.apellido,
+                                        email: usuario.email
+                                    }];
+    
+                                    // Agregar datos de la tarjeta a la factura
+                                    modelFactura.datosTarjeta = [{
+                                        tipoTarjeta: tarjetaEncontrada.tipoTarjeta,
+                                        nombreUsuario: tarjetaEncontrada.nombreUsuario
+                                    }];
+    
+                                    // Agregar datos del pedido a la factura
+                                    modelFactura.datosPedido = [{
+                                        idPedido: pedidoEncontrado._id,
+                                        fecha: pedidoEncontrado.fecha,
+                                        tipoPago: pedidoEncontrado.tipoPago,
+                                        direccionEnvio: pedidoEncontrado.direccionEnvio,
+                                        horaEntrega: pedidoEncontrado.horaEntrega,
+                                        metodoEnvio: pedidoEncontrado.metodoEnvio,
+                                        descuentos: pedidoEncontrado.descuentos,
+                                        numeroDeOrden: nuevoNumeroDeOrden, // Usar el nuevo número de orden
+                                    }];
+                                    modelFactura.compras = pedidoEncontrado.compras;
+                                    modelFactura.total = pedidoEncontrado.total;
+    
+                                    // Actualizar el stock de los productos y generar la factura
+                                    const updatesStock = pedidoEncontrado.compras.map(compra => {
+                                        return Productos.findByIdAndUpdate(compra.idProducto, {
+                                            $inc: { stock: -compra.cantidad, vendido: compra.cantidad }
+                                        });
+                                    });
+    
+                                    Promise.all(updatesStock).then(() => {
+                                        // Guardar la factura
+                                        modelFactura.save((err, agregarFactura) => {
+                                            if (err) return res.status(500).send({ mensaje: "Error, no se puede guardar la factura" });
+                                            if (!agregarFactura) return res.status(500).send({ mensaje: "No se puede guardar la factura" });
+    
+                                            // Cambiar el estado del pedido a "pagado"
+                                            Pedidos.updateOne(
+                                                { _id: pedidoEncontrado._id },
+                                                {
+                                                    estadoPedido: 'confirmado',
+                                                    pagoConfirmado: 'pago confirmado',
+                                                    numeroDeOrden: nuevoNumeroDeOrden // Actualizar el numeroDeOrden en el pedido
+                                                },
+                                                (err) => {
+                                                    if (err) return res.status(500).send({ mensaje: "Error al actualizar el estado del pedido" });
+    
+                                                    return res.status(200).send({ factura: agregarFactura });
+                                                }
+                                            );
+                                        });
+                                    }).catch(err => {
+                                        return res.status(500).send({ mensaje: "Error al actualizar el stock de los productos" });
+                                    });
+                                });
+                            });
+                        }
+                    );
+                });
             });
         });
-    });
-}
+    }
+
+    
 
 
 /* ROL FACTURADOR */
@@ -431,14 +432,21 @@ function agregarCaja(req, res) {
             // Establecemos vueltosCliente a 0
             const vueltosCliente = 0;
 
+            const totalPedidosCredito = 0;
+
+            const totalPedidosEfectivo = 0;
+
             // Calculamos totalEfectivoFactura
-            const totalEfectivoFactura = efectivoGeneral - vueltosCliente;
+            const totalEfectivoFactura = efectivoGeneral - vueltosCliente + totalPedidosCredito + totalPedidosEfectivo;
 
             // Creamos la nueva caja
             const nuevaCaja = new Caja({
                 efectivoGeneral,
                 vueltosCliente, // Establecer vueltosCliente a 0
-                totalEfectivoFactura, // Calcular totalEfectivoFactura
+                totalPedidosCredito,
+                totalEfectivoFactura,
+                totalPedidosEfectivo,
+
                 datosSucursal: [{
                     idSucursal: sucursalEncontrada._id,
                     nombreSucursal: sucursalEncontrada.nombreSucursal,
@@ -595,7 +603,13 @@ function generarFacturaPagoEfectivo(req, res) {
 
                 // Actualizar efectivoGeneral y totalEfectivoFactura
                 cajaEncontrada.efectivoGeneral -= vueltosCliente; // Restar el vuelto del efectivo general
-                cajaEncontrada.totalEfectivoFactura = cajaEncontrada.efectivoGeneral; // Actualizar totalEfectivoFactura
+                cajaEncontrada.vueltosCliente = (cajaEncontrada.vueltosCliente || 0) + vueltosCliente; // Sumar el nuevo vuelto
+
+                // Calcular el nuevo totalEfectivoFactura
+                cajaEncontrada.totalEfectivoFactura = cajaEncontrada.efectivoGeneral + 
+                    (cajaEncontrada.totalPedidosCredito || 0) + 
+                    (cajaEncontrada.totalPedidosEfectivo || 0) - 
+                    cajaEncontrada.vueltosCliente;
 
                 // Agregar el pedido a historialPedidosEfectivo en Caja
                 cajaEncontrada.historialPedidosEfectivo.push({
@@ -681,9 +695,6 @@ function generarFacturaPagoEfectivo(req, res) {
         });
     });
 }
-
-
-
 
 
 

@@ -2,7 +2,7 @@ const Pedidos = require('../models/pedidos.model');
 const Carritos = require('../models/carritos.model');
 const Usuarios = require('../models/usuarios.model');
 const Productos = require('../models/productos.model');
-const Efectivo = require('../models/efectivo.model');
+const Caja = require('../models/caja.model');
 
 /* OBTENER TODOS LOS PEDIDOS */
 function ObtenerTodosLosPedidos (req, res) {
@@ -494,8 +494,15 @@ function getPedidoPorId(req, res) {
             return res.status(400).send({ mensaje: 'El efectivo debe ser mayor o igual al total del pedido' });
         }
 
-        // Calcular el cambio
-        const cambioCliente = efectivoCliente > pedido.total ? efectivoCliente - pedido.total : 0;
+        // Validar que el efectivoCliente no supere el totalPedido + 50
+        if (efectivoCliente > pedido.total + 50) {
+            return res.status(400).send({ mensaje: 'El efectivo no puede ser mayor al total del pedido más 50' });
+        }
+
+        // Calcular el cambio y redondear a dos decimales
+        const cambioCliente = efectivoCliente > pedido.total 
+            ? parseFloat((efectivoCliente - pedido.total).toFixed(2)) 
+            : 0;
 
         // Crear un nuevo registro en el array de pagoEfectivo
         const nuevoPagoEfectivo = {
@@ -603,7 +610,103 @@ function pedidoConfirmadoEfectivo(req, res) {
     });
 }
 
+/* confirmar pedido credito */
+function confirmarPedidoCredito(req, res) {
+    const { numeroDeOrden, nombreSucursal } = req.body;
 
+    // Verificar que el número de orden y el nombre de la sucursal estén presentes
+    if (!numeroDeOrden || !nombreSucursal) {
+        return res.status(400).send({ mensaje: 'El número de orden y el nombre de la sucursal son requeridos.' });
+    }
+
+    // Buscar el pedido por numeroDeOrden
+    Pedidos.findOne({ numeroDeOrden: numeroDeOrden }, (err, pedidoEncontrado) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar el pedido.' });
+        if (!pedidoEncontrado) return res.status(404).send({ mensaje: 'Pedido no encontrado.' });
+
+        // Verificar que el tipo de pago sea "Tarjeta de crédito"
+        if (pedidoEncontrado.tipoPago !== "Tarjeta de crédito") {
+            return res.status(400).send({ mensaje: 'El pedido debe ser de tipo "Tarjeta de crédito".' });
+        }
+
+        // Verificar si el pedido ya fue confirmado o no está en camino
+        if (pedidoEncontrado.estadoOrden !== "en camino") {
+            return res.status(400).send({ mensaje: 'El pedido no se puede confirmar porque no está en camino o ya ha sido entregado.' });
+        }
+
+        // Cambiar estadoPedido y estadoOrden a "entregado"
+        pedidoEncontrado.estadoPedido = "entregado";
+        pedidoEncontrado.estadoOrden = "entregado";
+
+        // Llenar horaPedidoEntregado con la hora actual
+        pedidoEncontrado.horaPedidoEntregado = new Date();
+
+        // Limpiar el campo numeroDeOrden solo para este pedido
+        pedidoEncontrado.numeroDeOrden = 0;
+
+        // Vaciar el array datosCajero
+        // pedidoEncontrado.datosCajero = [];
+
+        // Actualizar la caja
+        Caja.findOne({ 'datosSucursal.nombreSucursal': nombreSucursal }, (err, caja) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar la caja.' });
+            if (!caja) return res.status(404).send({ mensaje: 'Caja no encontrada para la sucursal especificada.' });
+
+            // Actualizar totalPedidosCredito y agregar el pedido al historial
+            caja.totalPedidosCredito = (caja.totalPedidosCredito || 0) + pedidoEncontrado.total;
+            caja.historialPedidosCredito.push({
+                idPedido: pedidoEncontrado._id,
+                fecha: new Date(),
+                tipoPago: pedidoEncontrado.tipoPago,
+                direccionEnvio: pedidoEncontrado.direccionEnvio,
+                horaEntrega: pedidoEncontrado.horaEntrega,
+                metodoEnvio: pedidoEncontrado.metodoEnvio,
+                descuentos: pedidoEncontrado.descuentos,
+                numeroDeOrden: pedidoEncontrado.numeroDeOrden,
+                estadoPedido: pedidoEncontrado.estadoPedido,
+                incrementoEnvio: pedidoEncontrado.incrementoEnvio,
+                estadoOrden: pedidoEncontrado.estadoOrden,
+                horaRepartidorAsignado: pedidoEncontrado.horaRepartidorAsignado,
+                horaPedidoEntregado: pedidoEncontrado.horaPedidoEntregado,
+                pagoEfectivo: pedidoEncontrado.pagoEfectivo,
+                repartidorAsignado: pedidoEncontrado.repartidorAsignado,
+            });
+
+            // Actualizar totalEfectivoFactura
+            caja.totalEfectivoFactura = caja.efectivoGeneral - (caja.vueltosCliente || 0) + 
+                (caja.totalPedidosCredito || 0) + 
+                (caja.totalPedidosEfectivo || 0);
+
+            // Guardar los cambios en la caja
+            caja.save((err) => {
+                if (err) return res.status(500).send({ mensaje: 'Error al actualizar la caja.' });
+
+                // Cambiar el estado del repartidor a "libre"
+                if (pedidoEncontrado.repartidorAsignado && pedidoEncontrado.repartidorAsignado.length > 0) {
+                    const repartidorId = pedidoEncontrado.repartidorAsignado[0].idRepartidor;
+
+                    Usuarios.findByIdAndUpdate(repartidorId, { estadoRepartidor: "libre" }, { new: true }, (err, repartidorActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al actualizar el estado del repartidor.' });
+
+                        // Guardar los cambios en el pedido
+                        pedidoEncontrado.save((err, pedidoActualizado) => {
+                            if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
+
+                            return res.status(200).send({ mensaje: 'Pedido confirmado y entregado con éxito.', pedido: pedidoActualizado });
+                        });
+                    });
+                } else {
+                    // No hay repartidor asignado, guardar el pedido
+                    pedidoEncontrado.save((err, pedidoActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: 'Error al actualizar el pedido.' });
+
+                        return res.status(200).send({ mensaje: 'Pedido confirmado y entregado con éxito.', pedido: pedidoActualizado });
+                    });
+                }
+            });
+        });
+    });
+}
 
 module.exports = {
 
@@ -625,5 +728,6 @@ module.exports = {
     verPedidosConfirmadosEfectivo,
     verPedidosSinConfirmarEfectivo,
     verPedidosSinConfirmarCredito,
-    pedidoConfirmadoEfectivo
+    pedidoConfirmadoEfectivo,
+    confirmarPedidoCredito
 }

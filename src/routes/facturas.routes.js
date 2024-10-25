@@ -31,6 +31,7 @@ api.put('/editarCaja/:idCaja',autenticacionToken.Auth, FacturaController.editarC
 api.delete('/eliminarCaja/:idCaja',autenticacionToken.Auth, FacturaController.eliminarCaja);
 
 /* 6. ver caja por id */
+
 api.get('/getCajaPorId/:idCaja', autenticacionToken.Auth, FacturaController.getCajaPorId);
 
 /* 7. crear factura para pago con efectivo cuando ya este confirmado, lo hace el cajero,
@@ -44,6 +45,8 @@ api.get('/obtenerFacturasPorIdSucursal/:idSucursal', autenticacionToken.Auth, Fa
 /* 9. ver caja por usuario */
 
 api.get('/verCajaPorUsuario', autenticacionToken.Auth, FacturaController.verCajaPorUsuario);
+
+/* 10 confirmar pedidos credito */
 
 
 module.exports= api;
