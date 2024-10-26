@@ -16,7 +16,7 @@ api.get('/ObtenerTodasCajas', autenticacionToken.Auth, FacturaController.Obtener
 
 
 /* 1. VER HISTORIAL DE CREDITO POR ID SUCU */
-api.post('/verFacturaCredito/:idSucursal', autenticacionToken.Auth, FacturaController.verFacturaCredito);
+api.get('/verFacturaCredito/:idSucursal', autenticacionToken.Auth, FacturaController.verFacturaCredito);
 
 /* 2. AGREGAR CAJA */
 api.post('/agregarCaja', autenticacionToken.Auth, FacturaController.agregarCaja);

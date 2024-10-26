@@ -59,4 +59,8 @@ api.get ('/obtenerProductosCualquiera', ProductosController.ObtenerProductosCual
 api.get('/productosInventario/:ID', autenticacionToken.Auth, ProductosController.productosInventario);
 
 
+api.get('/obtenerProductosPorIdSucursalSinToken/:ID',  ProductosController.obtenerProductosPorIdSucursalSinToken);
+
+
+
 module.exports= api;

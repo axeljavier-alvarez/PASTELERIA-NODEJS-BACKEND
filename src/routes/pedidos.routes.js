@@ -70,5 +70,10 @@ api.get('/pedidosEntregadosCredito/:idSucursal', autenticacionToken.Auth, Pedido
 
 api.get('/pedidosEntregadosEfectivoGenerados/:idSucursal', autenticacionToken.Auth, PedidosController.pedidosEntregadosEfectivoGenerados);
 
+/* eliminar pedido */
+api.delete('/eliminarPedidosSinConfirmar/:idPedido', autenticacionToken.Auth, PedidosController.eliminarPedidosSinConfirmar);
+/* ver pedido por id */
+api.get('/verPedidosPorId/:idPedido', autenticacionToken.Auth, PedidosController.verPedidosPorId);
+
 
 module.exports= api;

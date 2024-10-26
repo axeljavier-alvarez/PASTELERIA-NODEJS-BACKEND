@@ -368,10 +368,7 @@ function GenerarFactura(req, res) {
 /* puede verlo el facturador y el gestor maybe*/
 function verFacturaCredito(req, res) {
     const idSucursal = req.params.idSucursal;
-    if (req.user.rol !== 'ROL_REPARTIDOR') {
-        return res.status(500).send({ mensaje: "Únicamente el ROL_REPARTIDOR puede realizar esta acción" });
-    }
-
+  
     // Buscar facturas que tengan datosSucursal con el idSucursal especificado
     Facturas.find({
         'datosSucursal.idSucursal': idSucursal,

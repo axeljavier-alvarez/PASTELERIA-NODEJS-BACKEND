@@ -459,11 +459,146 @@ function agregarCarritoPorIdProducto(req, res) {
         });
     }
     
+
+    /* actualizar carrito */
+
+    function actualizarStockProducto(req, res) {
+        const { idProducto, cantidad } = req.body; // Obtener los campos del cuerpo de la petición
+        const nuevaCantidad = Number(cantidad); // Nueva cantidad desde el cuerpo de la petición
+    
+        // Validar campos obligatorios
+        if (!idProducto || !cantidad) {
+            return res.status(400).send({ mensaje: 'Faltan campos obligatorios: idProducto y cantidad.' });
+        }
+    
+        if (nuevaCantidad <= 0) {
+            return res.status(400).send({ mensaje: 'La cantidad debe ser mayor que cero.' });
+        }
+    
+        // Verifica si existe el carrito del usuario
+        Carritos.findOne({ idUsuario: req.user.sub }, (err, carritoUsuario) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar el carrito' });
+    
+            if (!carritoUsuario) {
+                return res.status(404).send({ mensaje: 'No se encontró el carrito del usuario.' });
+            }
+    
+            // Verifica si el producto está en el carrito
+            const productoEnCarrito = carritoUsuario.compras.find(item => item.idProducto.toString() === idProducto);
+            if (!productoEnCarrito) {
+                return res.status(404).send({ mensaje: 'El producto no está en el carrito.' });
+            }
+    
+            // Busca el producto para verificar el stock
+            Productos.findById(idProducto, (err, productoEncontrado) => {
+                if (err || !productoEncontrado) {
+                    return res.status(500).send({ mensaje: 'Error al buscar el producto' });
+                }
+    
+                // Validar que la nueva cantidad no exceda el stock
+                if (nuevaCantidad > productoEncontrado.stock) {
+                    return res.status(400).send({ mensaje: 'La cantidad solicitada excede el stock disponible.' });
+                }
+    
+                // Actualiza la cantidad y el subtotal del producto en el carrito
+                const subTotal = nuevaCantidad * productoEncontrado.precio;
+    
+                Carritos.findOneAndUpdate(
+                    { idUsuario: req.user.sub, "compras.idProducto": idProducto },
+                    {
+                        $set: {
+                            "compras.$.cantidad": nuevaCantidad,
+                            "compras.$.subTotal": subTotal
+                        },
+                        $inc: { total: subTotal - productoEnCarrito.subTotal } // Ajusta el total del carrito
+                    },
+                    { new: true },
+                    (err, carritoActualizado) => {
+                        if (err) return res.status(500).send({ mensaje: "Error al actualizar el carrito" });
+                        return res.status(200).send({ mensaje: "Cantidad actualizada en el carrito", carrito: carritoActualizado });
+                    }
+                );
+            });
+        });
+    }
+    
+    
+
+    function eliminarProductoDelCarrito(req, res) {
+        
+    
+        const idProd = req.params.ID; // ID del producto a eliminar
+    
+        // Verifica si existe el carrito del usuario
+        Carritos.findOne({ idUsuario: req.user.sub }, (err, carritoUsuario) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar el carrito' });
+    
+            if (!carritoUsuario) {
+                return res.status(404).send({ mensaje: 'No se encontró el carrito del usuario.' });
+            }
+    
+            // Verifica si el producto está en el carrito
+            const productoEnCarrito = carritoUsuario.compras.find(item => item.idProducto.toString() === idProd);
+            if (!productoEnCarrito) {
+                return res.status(404).send({ mensaje: 'El producto no está en el carrito.' });
+            }
+    
+            // Calcula el nuevo total restando el subtotal del producto a eliminar
+            const nuevoTotal = carritoUsuario.total - productoEnCarrito.subTotal;
+    
+            // Elimina el producto del carrito
+            Carritos.findOneAndUpdate(
+                { idUsuario: req.user.sub },
+                {
+                    $pull: { compras: { idProducto: idProd } }, // Elimina el producto del array de compras
+                    total: nuevoTotal // Actualiza el total del carrito
+                },
+                { new: true },
+                (err, carritoActualizado) => {
+                    if (err) return res.status(500).send({ mensaje: "Error al eliminar el producto del carrito" });
+                    return res.status(200).send({ mensaje: "Producto eliminado del carrito", carrito: carritoActualizado });
+                }
+            );
+        });
+    }
+
+
+
+    function verProductoCarritoPorId(req, res) {
+        if (req.user.rol !== 'ROL_CLIENTE') {
+            return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción" });
+        }
+    
+        const idProd = req.params.idProducto; // ID del producto a visualizar
+    
+        // Busca el carrito del usuario
+        Carritos.findOne({ idUsuario: req.user.sub }, (err, carritoUsuario) => {
+            if (err) return res.status(500).send({ mensaje: 'Error al buscar el carrito' });
+    
+            if (!carritoUsuario) {
+                return res.status(404).send({ mensaje: 'No se encontró el carrito del usuario.' });
+            }
+    
+            // Busca el producto en el carrito
+            const productoEnCarrito = carritoUsuario.compras.find(item => item.idProducto.toString() === idProd);
+            if (!productoEnCarrito) {
+                return res.status(404).send({ mensaje: 'El producto no está en el carrito.' });
+            }
+    
+            // Retorna el producto encontrado
+            return res.status(200).send({ mensaje: "Producto encontrado en el carrito", producto: productoEnCarrito });
+        });
+    }
+
+
 module.exports = {
     RegistrarCarrito,
     EliminarProductoCarrito,
     agregarCarritoPorIdProducto,
-    verCarritosClienteRegistrado
+    verCarritosClienteRegistrado,
+    actualizarStockProducto,
+    eliminarProductoDelCarrito,
+    verProductoCarritoPorId
     
 
 }

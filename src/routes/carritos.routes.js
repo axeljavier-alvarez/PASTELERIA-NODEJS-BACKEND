@@ -14,4 +14,12 @@ api.put ('/registrarCarritoPorId/:ID', autenticacionToken.Auth, CarritosControll
 
 api.get('/verCarritosClienteRegistrado',autenticacionToken.Auth , CarritosController.verCarritosClienteRegistrado);
 
+// actualizar
+api.put('/actualizarStockProducto',autenticacionToken.Auth , CarritosController.actualizarStockProducto);
+// eliminar
+api.delete('/eliminarProductoDelCarrito/:ID', autenticacionToken.Auth, CarritosController.eliminarProductoDelCarrito);
+
+api.get('/verProductoCarritoPorId/:idProducto', autenticacionToken.Auth, CarritosController.verProductoCarritoPorId);
+
+
 module.exports= api;

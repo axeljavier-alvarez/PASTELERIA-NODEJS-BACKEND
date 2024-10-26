@@ -92,15 +92,15 @@ function verPedidosClienteRegistrado(req, res) {
         return res.status(500).send({ mensaje: "Únicamente el ROL_CLIENTE puede realizar esta acción." });
     }
 
-    // Busca los pedidos del usuario con estadoPedido confirmado
+    // Busca los pedidos del usuario con estadoPedido confirmado o entregado
     Pedidos.find({ 
         idUsuario: req.user.sub, 
-        estadoPedido: 'confirmado',
+        estadoPedido: { $in: ['confirmado', 'entregado'] }, // Cambiado para incluir 'entregado'
         tipoPago: 'Tarjeta de crédito',
     }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
         if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
-            return res.status(404).send({ mensaje: "No se encontraron pedidos confirmados para este cliente." });
+            return res.status(404).send({ mensaje: "No se encontraron pedidos confirmados o entregados para este cliente." });
         }
         return res.status(200).send({ pedidos: pedidosEncontrados });
     });
@@ -115,7 +115,7 @@ function verPedidosConfirmadosEfectivo(req, res) {
     // Busca los pedidos del usuario con estadoPedido confirmado
     Pedidos.find({ 
         idUsuario: req.user.sub, 
-        estadoPedido: 'confirmado',
+        estadoPedido: { $in: ['confirmado', 'entregado'] }, // Cambiado para incluir 'entregado'
         tipoPago: 'Efectivo',
     }, (err, pedidosEncontrados) => {
         if (err) return res.status(500).send({ mensaje: "Error en la petición." });
@@ -744,6 +744,9 @@ function confirmarPedidoGeneradoEfectivo(req, res) {
         pedidoEncontrado.horaPedidoEntregado = new Date();
         pedidoEncontrado.numeroDeOrden = 0;
 
+        // Calcular el total efectivo del cliente
+        const totalEfectivoCliente = pedidoEncontrado.pagoEfectivo.reduce((acc, pago) => acc + pago.efectivoCliente, 0);
+
         // Actualizar la caja
         Caja.findOne({ 'datosSucursal.nombreSucursal': nombreSucursal }, (err, caja) => {
             if (err) return res.status(500).send({ mensaje: 'Error al buscar la caja.' });
@@ -751,17 +754,17 @@ function confirmarPedidoGeneradoEfectivo(req, res) {
 
             // Imprimir valores para depuración
             console.log('totalPedidosEfectivo:', totalPedidosEfectivo);
-            console.log('total del pedido:', pedidoEncontrado.total);
+            console.log('total efectivo del cliente:', totalEfectivoCliente);
 
-            // Verificar que el totalPedidosEfectivo ingresado coincida con el total del pedido
-            if (Math.abs(totalPedidosEfectivo - pedidoEncontrado.total) > 0.01) {
+            // Verificar que el totalPedidosEfectivo ingresado coincida con el totalEfectivoCliente
+            if (Math.abs(totalPedidosEfectivo - totalEfectivoCliente) > 0.01) {
                 return res.status(400).send({ 
-                    mensaje: `El total de pedidos en efectivo no coincide con el total del pedido. Debe ingresar: ${pedidoEncontrado.total}.` 
+                    mensaje: `El total de pedidos en efectivo no coincide con el total del pedido. Debe ingresar: ${totalEfectivoCliente}.` 
                 });
             }
 
-            // Asignar el totalPedidosEfectivo
-            caja.totalPedidosEfectivo = totalPedidosEfectivo;
+            // Sumar al total existente
+            caja.totalPedidosEfectivo += totalPedidosEfectivo;
             caja.historialPedidosEntregadosEfectivo.push({
                 idPedido: pedidoEncontrado._id,
                 fecha: new Date(),
@@ -894,6 +897,37 @@ function pedidosEntregadosEfectivoGenerados(req, res) {
     });
 }
 
+// eliminar pedidos
+
+function eliminarPedidosSinConfirmar(req, res) {
+
+    
+  
+    var idPedido = req.params.idPedido;
+    Pedidos.findByIdAndDelete(idPedido, (err, eliminarPedido) => {
+  
+      if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+      if (!eliminarPedido) return res.status(500).send({ mensaje: "Error al eliminar el pedido" });
+      return res.status(200).send({ pedidos: eliminarPedido });
+  
+    });
+  
+  }
+
+  // ver pedidos por id
+  function verPedidosPorId(req, res) {
+
+    // buscar por id
+    var idPedido = req.params.idPedido;
+  
+    Pedidos.findById(idPedido, (err, pedidoEncontrado) => {
+      if (err) return res.status(500).send({ mensaje: "Error en la petición" });
+      if (!pedidoEncontrado) return res.status(500).send({ mensaje: "Error al ver los pedidos" });
+      return res.status(200).send({ pedidos: pedidoEncontrado })
+    })
+  }
+  
+
 
 module.exports = {
 
@@ -920,5 +954,7 @@ module.exports = {
     verPedidoAsignado,
     confirmarPedidoGeneradoEfectivo,
     pedidosEntregadosCredito,
-    pedidosEntregadosEfectivoGenerados
+    pedidosEntregadosEfectivoGenerados,
+    eliminarPedidosSinConfirmar,
+    verPedidosPorId
 }

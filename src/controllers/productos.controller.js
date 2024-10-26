@@ -8,19 +8,26 @@ const Usuarios = require('../models/usuarios.model');
 /*  SIN TOKEN */
 
 function ObtenerProductosCualquiera(req, res) {
+    Productos.find({ vendido: { $gt: 0 } }) // Filtra productos con vendido > 0
+        .sort({ vendido: -1 }) // Ordena por vendido de mayor a menor
+        .exec((err, productosEncontrados) => {
+            if (err) return res.send({ mensaje: "Error: " + err });
 
+            // Filtra productos únicos por nombreProducto
+            const productosUnicos = [];
+            const nombresVista = new Set();
 
-
-    Productos.find((err, ProductosEncontrados) => {
-        if (err) return res.send({ mensaje: "Error: " + err })
-
-        return res.send({ productos: ProductosEncontrados })
-        /* Esto retornara
-            {
-                productos: ["array con todos los productos"]
+            for (const producto of productosEncontrados) {
+                if (!nombresVista.has(producto.nombreProducto)) {
+                    nombresVista.add(producto.nombreProducto);
+                    productosUnicos.push(producto);
+                }
+                // Limita el número de productos a 6
+                if (productosUnicos.length === 6) break;
             }
-        */
-    })
+
+            return res.send({ productos: productosUnicos });
+        });
 }
 
 function agregarProductoRolGestor(req, res) {
@@ -408,7 +415,27 @@ function productosInventario(req, res) {
 }
 
 
+function obtenerProductosPorIdSucursalSinToken(req, res) {
 
+   
+
+    const idSucursal = req.params.ID; // ID de la categoría desde la ruta
+
+    // Validar que se reciba el ID de la categoría
+    if (!idSucursal) {
+        return res.status(400).send({ mensaje: 'Falta el ID de la sucursal.' });
+    }
+
+    // Buscar los productos por ID de categoría en el array descripcionCategoria
+    Productos.find({ 'datosSucursal.idSucursal': idSucursal }, (err, productosEncontrados) => {
+        if (err) return res.status(500).send({ mensaje: 'Error al buscar los productos.' });
+        if (!productosEncontrados || productosEncontrados.length === 0) {
+            return res.status(404).send({ mensaje: 'No se encontraron productos para la sucursal proporcionada.' });
+        }
+
+        return res.status(200).send({ productos: productosEncontrados });
+    });
+}
 
 
 module.exports = {
@@ -424,5 +451,7 @@ module.exports = {
     verProductosPorIdRolCliente,
     verProductosRolCliente,
     ObtenerProductosCualquiera,
-    productosInventario
+    productosInventario,
+    obtenerProductosPorIdSucursalSinToken
+
 }
