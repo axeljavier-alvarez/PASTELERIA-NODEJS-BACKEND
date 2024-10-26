@@ -927,6 +927,23 @@ function eliminarPedidosSinConfirmar(req, res) {
     })
   }
   
+  
+  function verPedidosUsuario(req, res) {
+  // Obtener el email del repartidor autenticado
+  const emailRepartidor = req.user.email; // Asegúrate de que el email esté disponible en req.user
+
+  // Busca los pedidos donde el email del repartidor asignado coincide
+  Pedidos.find({ 'repartidorAsignado.email': emailRepartidor }, (err, pedidosEncontrados) => {
+      if (err) return res.status(500).send({ mensaje: "Error en la petición." });
+      
+      if (!pedidosEncontrados || pedidosEncontrados.length === 0) {
+          return res.status(404).send({ mensaje: "No se encontraron pedidos asignados a este repartidor." });
+      }
+
+      return res.status(200).send({ pedidos: pedidosEncontrados });
+  });
+}
+
 
 
 module.exports = {
@@ -956,5 +973,6 @@ module.exports = {
     pedidosEntregadosCredito,
     pedidosEntregadosEfectivoGenerados,
     eliminarPedidosSinConfirmar,
-    verPedidosPorId
+    verPedidosPorId,
+    verPedidosUsuario
 }

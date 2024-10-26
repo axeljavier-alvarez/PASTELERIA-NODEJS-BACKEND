@@ -75,5 +75,10 @@ api.delete('/eliminarPedidosSinConfirmar/:idPedido', autenticacionToken.Auth, Pe
 /* ver pedido por id */
 api.get('/verPedidosPorId/:idPedido', autenticacionToken.Auth, PedidosController.verPedidosPorId);
 
+api.get('/verPedidosUsuario', autenticacionToken.Auth, PedidosController.verPedidosUsuario);
+
+
+
+
 
 module.exports= api;
