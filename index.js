@@ -55,13 +55,15 @@ function RegistrarAdministradorDefecto(req, res){
   
         if(err) console.log('error en la peticion de la base de datos')
   
+
         if(!AdministradorEncontrado){
             var usuarioModel = new Usuarios();
   
+            
             usuarioModel.nombre = 'ADMIN';
             usuarioModel.apellido = 'ADMIN'
-            usuarioModel.email = 'ADMIN';
-            usuarioModel.password = '123456'
+            usuarioModel.email = 'admin@gmail.com';
+            usuarioModel.password = '123456@Intecap'
             usuarioModel.rol = 'ROL_ADMIN';
             usuarioModel.telefono = 12345678;
             usuarioModel.direccion = 'Calle Doreteo Guamuch Zona 5';
